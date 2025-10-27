@@ -33,7 +33,7 @@ coverage-html:
 validate: lint security test
 
 run:
-	go run cmd/api/v1/main.go
+	go run cmd/main.go
 
 db:
 	docker-compose up -d db
