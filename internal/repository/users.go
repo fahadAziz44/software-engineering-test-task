@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"cruder/internal/errors"
 	"cruder/internal/model"
 	"database/sql"
 )
@@ -21,7 +22,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 }
 
 func (r *userRepository) GetAll() ([]model.User, error) {
-	rows, err := r.db.QueryContext(context.Background(), `SELECT id, username, email, full_name FROM users`)
+	rows, err := r.db.QueryContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +31,7 @@ func (r *userRepository) GetAll() ([]model.User, error) {
 	var users []model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -45,10 +46,10 @@ func (r *userRepository) GetAll() ([]model.User, error) {
 
 func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 	var u model.User
-	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name FROM users WHERE username = $1`, username).
-		Scan(&u.ID, &u.Username, &u.Email, &u.FullName); err != nil {
+	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users WHERE username = $1`, username).
+		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, errors.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -57,10 +58,10 @@ func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 
 func (r *userRepository) GetByID(id int64) (*model.User, error) {
 	var u model.User
-	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Username, &u.Email, &u.FullName); err != nil {
+	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, errors.ErrUserNotFound
 		}
 		return nil, err
 	}

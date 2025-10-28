@@ -1,12 +1,15 @@
 package controller
 
 import (
+	"cruder/internal/errors"
+	"cruder/internal/service"
+	"fmt"
 	"net/http"
 	"strconv"
 
-	"cruder/internal/service"
-
 	"github.com/gin-gonic/gin"
+
+	stdErrors "errors"
 )
 
 type UserController struct {
@@ -32,7 +35,17 @@ func (c *UserController) GetUserByUsername(ctx *gin.Context) {
 
 	user, err := c.service.GetByUsername(username)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if stdErrors.Is(err, errors.ErrUserNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Not found",
+				"message": fmt.Sprintf("user with username '%s' not found", username),
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   err.Error(),
+			"message": fmt.Sprintf("failed to retrieve user with username '%s': %v", username, err),
+		})
 		return
 	}
 
@@ -43,13 +56,26 @@ func (c *UserController) GetUserByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid id"})
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid input",
+			"message": "ID must be a valid integer",
+		})
 		return
 	}
 
 	user, err := c.service.GetByID(id)
 	if err != nil {
-		ctx.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		if stdErrors.Is(err, errors.ErrUserNotFound) {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error":   "Not found",
+				"message": fmt.Sprintf("user with id '%d' not found", id),
+			})
+			return
+		}
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Internal server error",
+			"message": fmt.Sprintf("failed to retrieve user with id '%d': %v", id, err),
+		})
 		return
 	}
 
