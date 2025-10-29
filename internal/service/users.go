@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+
+	"github.com/google/uuid"
 )
 
 type UserService interface {
 	GetAll() ([]model.User, error)
 	GetByUsername(username string) (*model.User, error)
-	GetByID(id int64) (*model.User, error)
+	GetByID(id uuid.UUID) (*model.User, error)
 	Create(req *model.CreateUserRequest) (*model.User, error)
 }
 
@@ -29,7 +31,9 @@ func (s *userService) GetAll() ([]model.User, error) {
 }
 
 func (s *userService) GetByUsername(username string) (*model.User, error) {
-	var user, err = s.repo.GetByUsername(username)
+	// assuming username is case insensitive can serve as good example of business logic being validated in service layer.
+	normalizedUsername := strings.TrimSpace(strings.ToLower(username))
+	var user, err = s.repo.GetByUsername(normalizedUsername)
 	if err != nil {
 		// Repository layer maps storage errors to domain errors; service simply propagates.
 		return nil, err
@@ -37,7 +41,7 @@ func (s *userService) GetByUsername(username string) (*model.User, error) {
 	return user, nil
 }
 
-func (s *userService) GetByID(id int64) (*model.User, error) {
+func (s *userService) GetByID(id uuid.UUID) (*model.User, error) {
 	var user, err = s.repo.GetByID(id)
 	if err != nil {
 		// Repository layer maps storage errors to domain errors; service simply propagates.

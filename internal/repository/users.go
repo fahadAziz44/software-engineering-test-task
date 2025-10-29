@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"strings"
 
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 
 	stdErrors "errors"
@@ -15,7 +16,7 @@ import (
 type UserRepository interface {
 	GetAll() ([]model.User, error)
 	GetByUsername(username string) (*model.User, error)
-	GetByID(id int64) (*model.User, error)
+	GetByID(id uuid.UUID) (*model.User, error)
 	Create(req *model.CreateUserRequest) (*model.User, error)
 }
 
@@ -28,7 +29,7 @@ func NewUserRepository(db *sql.DB) UserRepository {
 }
 
 func (r *userRepository) GetAll() ([]model.User, error) {
-	rows, err := r.db.QueryContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users`)
+	rows, err := r.db.QueryContext(context.Background(), `SELECT id, username, email, full_name, created_at, updated_at FROM users`)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +38,7 @@ func (r *userRepository) GetAll() ([]model.User, error) {
 	var users []model.User
 	for rows.Next() {
 		var u model.User
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt, &u.UpdatedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -52,8 +53,8 @@ func (r *userRepository) GetAll() ([]model.User, error) {
 
 func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 	var u model.User
-	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users WHERE username = $1`, username).
-		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
+	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at, updated_at FROM users WHERE username = $1`, username).
+		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			// translate storage errors to domain errors
 			return nil, errors.ErrUserNotFound
@@ -63,10 +64,10 @@ func (r *userRepository) GetByUsername(username string) (*model.User, error) {
 	return &u, nil
 }
 
-func (r *userRepository) GetByID(id int64) (*model.User, error) {
+func (r *userRepository) GetByID(id uuid.UUID) (*model.User, error) {
 	var u model.User
-	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at FROM users WHERE id = $1`, id).
-		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt); err != nil {
+	if err := r.db.QueryRowContext(context.Background(), `SELECT id, username, email, full_name, created_at, updated_at FROM users WHERE id = $1`, id).
+		Scan(&u.ID, &u.Username, &u.Email, &u.FullName, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			// translate storage errors to domain errors
 			return nil, errors.ErrUserNotFound
@@ -80,9 +81,9 @@ func (r *userRepository) Create(req *model.CreateUserRequest) (*model.User, erro
 	var user model.User
 
 	query := `
-		INSERT INTO users (username, email, full_name, created_at)
-		VALUES ($1, $2, $3, CURRENT_TIMESTAMP)
-		RETURNING id, username, email, full_name, created_at
+		INSERT INTO users (username, email, full_name, created_at, updated_at)
+		VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		RETURNING id, username, email, full_name, created_at, updated_at
 	`
 
 	err := r.db.QueryRowContext(
@@ -91,7 +92,7 @@ func (r *userRepository) Create(req *model.CreateUserRequest) (*model.User, erro
 		req.Username,
 		req.Email,
 		req.FullName,
-	).Scan(&user.ID, &user.Username, &user.Email, &user.FullName, &user.CreatedAt)
+	).Scan(&user.ID, &user.Username, &user.Email, &user.FullName, &user.CreatedAt, &user.UpdatedAt)
 
 	if err != nil {
 		// map PostgreSQL unique constraint violations to domain errors ErrUsernameExists or ErrEmailExists

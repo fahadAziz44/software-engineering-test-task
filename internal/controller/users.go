@@ -6,10 +6,10 @@ import (
 	"cruder/internal/service"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/google/uuid"
 
 	stdErrors "errors"
 )
@@ -56,11 +56,11 @@ func (c *UserController) GetUserByUsername(ctx *gin.Context) {
 
 func (c *UserController) GetUserByID(ctx *gin.Context) {
 	idStr := ctx.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
+	id, err := uuid.Parse(idStr)
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid input",
-			"message": "ID must be a valid integer",
+			"message": "ID must be a valid UUID",
 		})
 		return
 	}
@@ -70,13 +70,13 @@ func (c *UserController) GetUserByID(ctx *gin.Context) {
 		if stdErrors.Is(err, errors.ErrUserNotFound) {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"error":   "Not found",
-				"message": fmt.Sprintf("user with id '%d' not found", id),
+				"message": fmt.Sprintf("user with id '%s' not found", id),
 			})
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Internal server error",
-			"message": fmt.Sprintf("failed to retrieve user with id '%d': %v", id, err),
+			"message": fmt.Sprintf("failed to retrieve user with id '%s': %v", id, err),
 		})
 		return
 	}
