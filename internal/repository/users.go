@@ -5,6 +5,7 @@ import (
 	"cruder/internal/errors"
 	"cruder/internal/model"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/google/uuid"
@@ -18,6 +19,8 @@ type UserRepository interface {
 	GetByUsername(username string) (*model.User, error)
 	GetByID(id uuid.UUID) (*model.User, error)
 	Create(req *model.CreateUserRequest) (*model.User, error)
+	Update(id uuid.UUID, req *model.UpdateUserRequest) (*model.User, error)
+	Delete(id uuid.UUID) error
 }
 
 type userRepository struct {
@@ -112,4 +115,95 @@ func (r *userRepository) Create(req *model.CreateUserRequest) (*model.User, erro
 	}
 
 	return &user, nil
+}
+
+func (r *userRepository) Update(id uuid.UUID, req *model.UpdateUserRequest) (*model.User, error) {
+	// Build dynamic UPDATE query based on provided fields
+	updates := []string{}
+	args := []interface{}{}
+	argPosition := 1
+
+	if req.Username != nil {
+		updates = append(updates, fmt.Sprintf("username = $%d", argPosition))
+		args = append(args, *req.Username)
+		argPosition++
+	}
+	if req.Email != nil {
+		updates = append(updates, fmt.Sprintf("email = $%d", argPosition))
+		args = append(args, *req.Email)
+		argPosition++
+	}
+	if req.FullName != nil {
+		updates = append(updates, fmt.Sprintf("full_name = $%d", argPosition))
+		args = append(args, *req.FullName)
+		argPosition++
+	}
+
+	// Empty update (no fields provided) - fetch and return existing user
+	if len(updates) == 0 {
+		return r.GetByID(id)
+	}
+
+	updates = append(updates, "updated_at = CURRENT_TIMESTAMP")
+	args = append(args, id)
+
+	query := fmt.Sprintf(`
+		UPDATE users
+		SET %s
+		WHERE id = $%d
+		RETURNING id, username, email, full_name, created_at, updated_at
+	`, strings.Join(updates, ", "), argPosition)
+
+	var user model.User
+	err := r.db.QueryRowContext(
+		context.Background(),
+		query,
+		args...,
+	).Scan(&user.ID, &user.Username, &user.Email, &user.FullName, &user.CreatedAt, &user.UpdatedAt)
+
+	if err != nil {
+		// User doesn't exist - UPDATE affected 0 rows
+		if err == sql.ErrNoRows {
+			return nil, errors.ErrUserNotFound
+		}
+
+		var pqErr *pq.Error
+		if stdErrors.As(err, &pqErr) {
+			if pqErr.Code == "23505" {
+				if strings.Contains(pqErr.Message, "username") {
+					return nil, errors.ErrUsernameExists
+				}
+				if strings.Contains(pqErr.Message, "email") {
+					return nil, errors.ErrEmailExists
+				}
+			}
+		}
+		return nil, err
+	}
+
+	return &user, nil
+}
+
+// Delete removes a user by ID. Returns ErrUserNotFound if the user doesn't exist.
+// This is the "informative" approach - the repository reports facts, not policy.
+// The controller layer decides whether to treat non-existence as idempotent or not.
+func (r *userRepository) Delete(id uuid.UUID) error {
+	query := `DELETE FROM users WHERE id = $1`
+
+	result, err := r.db.ExecContext(context.Background(), query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	// Report the fact: user didn't exist
+	if rowsAffected == 0 {
+		return errors.ErrUserNotFound
+	}
+
+	return nil // Success: 1 row was deleted
 }

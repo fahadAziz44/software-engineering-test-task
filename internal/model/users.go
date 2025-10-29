@@ -20,3 +20,10 @@ type CreateUserRequest struct {
 	Email    string `json:"email" binding:"required,email,max=100"`
 	FullName string `json:"full_name" binding:"required,min=2,max=100"`
 }
+
+// All fields are optional (pointers) to support partial updates (PATCH)
+type UpdateUserRequest struct {
+	Username *string `json:"username,omitempty" binding:"omitempty,min=3,max=50,alphanum"`
+	Email    *string `json:"email,omitempty" binding:"omitempty,email,max=100"`
+	FullName *string `json:"full_name,omitempty" binding:"omitempty,min=2,max=100"`
+}

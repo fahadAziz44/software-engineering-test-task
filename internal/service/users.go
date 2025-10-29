@@ -16,14 +16,22 @@ type UserService interface {
 	GetByUsername(username string) (*model.User, error)
 	GetByID(id uuid.UUID) (*model.User, error)
 	Create(req *model.CreateUserRequest) (*model.User, error)
+	Update(id uuid.UUID, req *model.UpdateUserRequest) (*model.User, error)
+	Delete(id uuid.UUID) error
 }
 
 type userService struct {
 	repo repository.UserRepository
+	// fullNamePattern caches the compiled regex for validating full names for performance gains (initialized once for efficiency).
+	fullNamePattern *regexp.Regexp
 }
 
 func NewUserService(repo repository.UserRepository) UserService {
-	return &userService{repo: repo}
+	return &userService{
+		repo: repo,
+		// Compile regex pattern once for performance (expensive operation)
+		fullNamePattern: regexp.MustCompile(`^[a-zA-Z\s\-']+$`),
+	}
 }
 
 func (s *userService) GetAll() ([]model.User, error) {
@@ -51,33 +59,68 @@ func (s *userService) GetByID(id uuid.UUID) (*model.User, error) {
 }
 
 func (s *userService) Create(req *model.CreateUserRequest) (*model.User, error) {
-	// Additional business logic validation beyond struct tags
-	if err := s.validateCreateUserRequest(req); err != nil {
-		return nil, err
-	}
 	// Normalize input
 	req.Username = strings.TrimSpace(strings.ToLower(req.Username))
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	req.FullName = strings.TrimSpace(req.FullName)
 
+	// Business logic validation: full name must contain only letters, spaces, hyphens, and apostrophes
+	if err := s.validateFullName(req.FullName); err != nil {
+		return nil, err
+	}
+
 	// Create user in repository
 	user, err := s.repo.Create(req)
 	if err != nil {
-		// Repository layer maps storage error  to domain errors; service simply propagates.
+		// Repository layer maps storage error to domain errors; service simply propagates.
 		return nil, err
 	}
 
 	return user, nil
 }
 
-func (s *userService) validateCreateUserRequest(req *model.CreateUserRequest) error {
-	// controller layer already does format check for alphanumeric characters and email format
-	// Stating my assumption , if we have any validation related to our product , we will add it here.
-	// forexample if we have a rule that full name must not contain special characters except spaces, hyphens, and apostrophes we give validation error here.
-	fullNameRegex := regexp.MustCompile(`^[a-zA-Z\s\-']+$`)
-	if !fullNameRegex.MatchString(req.FullName) {
+// controller layer already does format check for alphanumeric characters and email format
+// Stating my assumption here that, if we have any checl/validation related to business logic , we can add it here.
+// forexample if we have a rule that validateFullName validates that a full name contains only allowed characters
+// Allowed: letters, spaces, hyphens, and apostrophes
+func (s *userService) validateFullName(fullName string) error {
+	if !s.fullNamePattern.MatchString(fullName) {
 		return fmt.Errorf("%w: full name must contain only letters, spaces, hyphens, and apostrophes", errors.ErrInvalidInput)
 	}
-
 	return nil
+}
+
+func (s *userService) Update(id uuid.UUID, req *model.UpdateUserRequest) (*model.User, error) {
+	// Normalize input for fields that are present
+	if req.Username != nil {
+		normalized := strings.TrimSpace(strings.ToLower(*req.Username))
+		req.Username = &normalized
+	}
+	if req.Email != nil {
+		normalized := strings.TrimSpace(strings.ToLower(*req.Email))
+		req.Email = &normalized
+	}
+	if req.FullName != nil {
+		normalized := strings.TrimSpace(*req.FullName)
+		req.FullName = &normalized
+
+		// Business logic validation: full name must contain only letters, spaces, hyphens, and apostrophes
+		if err := s.validateFullName(*req.FullName); err != nil {
+			return nil, err
+		}
+	}
+
+	// Update user in repository
+	user, err := s.repo.Update(id, req)
+	if err != nil {
+		// Repository layer maps storage errors to domain errors; service simply propagates.
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *userService) Delete(id uuid.UUID) error {
+	// Delete user from repository
+	return s.repo.Delete(id)
 }
