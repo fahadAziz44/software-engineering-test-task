@@ -134,32 +134,7 @@ curl -X POST http://localhost:8080/api/v1/users \
   -d '{"username": "johndoe", "email": "john@example.com", "full_name": "John Doe"}'
 ```
 
----
 
-## Testing
-The project has comprehensive unit tests for the service layer.
-
-```bash
-# Run all unit tests
-make test
-
-# View coverage summary
-make coverage
-
-# Generate HTML coverage report
-make coverage-html
-```
-
-### Run All Validation Checks
-
-```bash
-# Run linting + security scan + tests
-make validate
-```
-
-See [TEST_API_README.md](./TEST_API_README.md) for complete testing documentation.
-
----
 
 ## Key Features
 
@@ -276,3 +251,57 @@ Automated quality checks run on every push to master:
 **Configuration**: `.github/workflows/ci.yml`
 
 **Documentation**: See [CI_PIPELINE_GUIDE.md](./docs/CI_PIPELINE_GUIDE.md) for GitHub Secrets setup and detailed pipeline explanation
+
+---
+
+## Logging
+
+The application uses **structured JSON logging** with automatic request tracing:
+
+**Features:**
+- All logs in JSON format (startup, requests, errors)
+- Automatic log levels based on HTTP status codes
+- Unique Request-ID header added to all responses `X-Request-ID` header
+**Log Level**
+- INFO: 2xx status codes
+- WARN: 4xx status codes
+- ERROR: 5xx status codes and request failures
+
+**Example log output:**
+```json
+{"time":"2025-10-31T16:58:03Z","level":"INFO","msg":"Request completed","request_id":"5ca149c4-a6cc-4fb4-a151-075828504e48","method":"GET","path":"/api/v1/users","status_code":200,"latency":23959166,"client_ip":"::1","user_agent":"curl/8.7.1"}
+```
+
+**How to use:**
+- **Controllers**: Access request logger via Gin context
+- **Services**: Pass logger for important business events
+- **Startup/errors**: Use structured logger for consistency
+
+**For detailed logging documentation**, see [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md)
+
+---
+
+## Testing
+The project has comprehensive unit tests for the service layer.
+
+```bash
+# Run all unit tests
+make test
+
+# View coverage summary
+make coverage
+
+# Generate HTML coverage report
+make coverage-html
+```
+
+### Run All Validation Checks
+
+```bash
+# Run linting + security scan + tests
+make validate
+```
+
+See [TEST_API_README.md](./TEST_API_README.md) for complete testing documentation.
+
+---

@@ -5,7 +5,7 @@ import (
 	"cruder/internal/model"
 	"cruder/internal/service"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -267,7 +267,11 @@ func (c *UserController) DeleteUser(ctx *gin.Context) {
 		if stdErrors.Is(err, errors.ErrUserNotFound) {
 			// Log for observability: track attempts to delete non-existent users
 			// This helps identify client bugs, typos, or potential probing attacks
-			log.Printf("INFO: Attempted deletion of non-existent user (id=%s)", id)
+			if loggerVal, exists := ctx.Get("logger"); exists {
+				logger := loggerVal.(*slog.Logger)
+				logger.Info("Attempted deletion of non-existent user",
+					slog.String("user_id", id.String()))
+			}
 			ctx.Status(http.StatusNoContent)
 			return
 		}

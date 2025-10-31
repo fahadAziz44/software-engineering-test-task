@@ -61,3 +61,13 @@ func (c *Config) BuildDSN() (string, error) {
 
 	return dsn, nil
 }
+
+// GetEnvironment returns the current runtime environment
+// Returns "production" if GIN_MODE is "release", otherwise "development"
+func GetEnvironment() string {
+	mode := os.Getenv("GIN_MODE")
+	if mode == "release" {
+		return "production"
+	}
+	return "development"
+}
