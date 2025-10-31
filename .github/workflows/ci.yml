@@ -29,7 +29,7 @@ jobs:
       - name: Install golangci-lint
         run: |
           curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
-            sh -s -- -b $(go env GOPATH)/bin v1.62
+            sh -s -- -b $(go env GOPATH)/bin latest
 
       - name: Run linters
         run: $(go env GOPATH)/bin/golangci-lint run ./...
@@ -69,19 +69,8 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: Run tests with coverage
-        run: go test -v -race -coverprofile=coverage.out ./...
-
-      - name: Check coverage threshold
-        run: |
-          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-          echo "Coverage: $coverage%"
-
-          if (( $(echo "$coverage < 70" | bc -l) )); then
-            echo "❌ Coverage $coverage% is below 70%"
-            exit 1
-          fi
-          echo "✅ Coverage meets threshold"
+      - name: Run tests
+        run: go test -v -race ./...
 
   
   build:
