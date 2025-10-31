@@ -1,0 +1,52 @@
+# Exclude unnecessary files from Docker build context
+
+*.log
+*.out
+*.test
+.server.pid
+.server.log
+coverage.html
+coverage.out
+
+postgres_data/
+*.db
+*.sqlite
+
+.git/
+.gitignore
+
+
+*.md
+docs/
+LICENSE
+
+
+.env
+.env.*
+
+
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+
+*_test.go
+test-api.sh
+
+
+.github/
+
+
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+
+tmp/
+*.tmp
+
+# What gets included:
+# - go.mod, go.sum (for dependencies)
+# - cmd/ and internal/ (source code)
+# - migrations/ (for database setup)

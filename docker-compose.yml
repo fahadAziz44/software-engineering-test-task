@@ -10,6 +10,26 @@ services:
       POSTGRES_HOST: db
     volumes:
       - ./postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cruder-app
+    ports:
+      - "8080:8080"
+    environment:
+      POSTGRES_DSN: "host=db port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
+      GIN_MODE: release
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   postgres_data:
