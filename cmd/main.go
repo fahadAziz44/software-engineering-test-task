@@ -52,6 +52,7 @@ func main() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(middleware.RequestLogger(logger))
+	r.Use(middleware.APIKeyAuth())
 
 	handler.New(r, controllers.Users)
 
