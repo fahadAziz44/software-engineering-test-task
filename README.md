@@ -117,7 +117,7 @@ See [TEST_API_README.md](./TEST_API_README.md) for complete testing documentatio
 - ✅ **Dockerized application** - Production-ready container (36MB)
 - ✅ **Docker Compose setup** - One-command development environment
 - ✅ **Multi-stage builds** - Optimized for size and security
-- ✅ **CI/CD pipeline** - Automated quality checks and security scanning
+- ✅ **CI/CD pipeline** - Automated linting, security scanning, testing (golangci-lint + gosec)
 
 ## Docker Implementation
 
@@ -184,3 +184,26 @@ docker-compose down
 
 Detailed technical documentation available in `docs/`:
 - [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Size analysis and optimization results
+
+---
+
+## CI/CD Pipeline
+
+Automated quality checks run on every push to master :
+
+**Key Features**
+CI catches bugs early - Before they reach production
+4 automated checks - Lint, Security, Tests, Build
+Jobs run in parallel
+Must pass to merge
+it takes ~45 seconds to run them in parallel.
+
+**Pipeline Jobs** (parallel execution):
+- **Code Quality** - golangci-lint (50+ linters including go vet, go fmt, errcheck)
+- **Security Scan** - gosec (SQL injection, hardcoded credentials, crypto issues)
+- **Unit Tests** - go test with race detection
+- **Build Verification** - Ensures code compiles successfully
+
+
+**Configuration**: `.github/workflows/ci.yml`
+
