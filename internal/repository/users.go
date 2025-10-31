@@ -36,7 +36,7 @@ func (r *userRepository) GetAll() ([]model.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }() // Ignore error in defer - rows will be closed automatically
 
 	var users []model.User
 	for rows.Next() {
@@ -147,7 +147,8 @@ func (r *userRepository) Update(id uuid.UUID, req *model.UpdateUserRequest) (*mo
 	updates = append(updates, "updated_at = CURRENT_TIMESTAMP")
 	args = append(args, id)
 
-	query := fmt.Sprintf(`
+	// Safe: Using parameterized queries ($1, $2) - values go through args array
+	query := fmt.Sprintf(` /* #nosec G201 */
 		UPDATE users
 		SET %s
 		WHERE id = $%d
