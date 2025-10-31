@@ -1,2 +1,21 @@
 .env
 postgres_data
+
+# Server management files
+.server.pid
+.server.log
+
+# Test coverage
+test.out
+*.out
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
