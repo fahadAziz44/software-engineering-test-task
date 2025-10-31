@@ -63,6 +63,33 @@ docker-compose down
 docker-compose down -v
 ```
 
+---
+
+## Configuration
+
+**separates sensitive data from code** :
+
+**Points**:
+- No more hardcoded passwords in source code
+- Non-sensitive config in `config.yaml` (host, port, database name)
+- Sensitive data in environment variables (username, password)
+
+**How it works**:
+```bash
+# 1. Copy environment template (first time only)
+cp .env.example .env
+
+# 2. Edit .env with your credentials all variables are required. No fallback
+DB_USER=postgres
+DB_PASSWORD=your_secure_password
+
+# 3. Run application - automatically loads config
+make run
+```
+
+If `DB_USER` and `DB_PASSWORD` are not available in environment variables file application will fail with clear error.
+---
+
 ## API Endpoints
 
 All endpoints use base URL: `http://localhost:8080/api/v1`
@@ -113,6 +140,7 @@ See [TEST_API_README.md](./TEST_API_README.md) for complete testing documentatio
 - ✅ SQL injection prevention
 - ✅ Proper HTTP status codes
 - ✅ Structured error responses
+- ✅ **Dynamic configuration** - Separates sensitive data (env vars) from code (config.yaml)
 - ✅ **97.5% test coverage** - Comprehensive unit tests
 - ✅ **Dockerized application** - Production-ready container (36MB)
 - ✅ **Docker Compose setup** - One-command development environment
@@ -206,4 +234,6 @@ it takes ~45 seconds to run them in parallel.
 
 
 **Configuration**: `.github/workflows/ci.yml`
+
+**Documentation**: See [CI_PIPELINE_GUIDE.md](./docs/CI_PIPELINE_GUIDE.md) for GitHub Secrets setup and detailed pipeline explanation
 

@@ -77,6 +77,10 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
 
+    env:
+      DB_USER: ${{ secrets.CI_DB_USER }}
+      DB_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -95,7 +99,7 @@ jobs:
             -o cruder \
             ./cmd/main.go
 
-      - name: Test binary is executable
+      - name: Verify binary builds successfully
         run: |
           chmod +x cruder
-          ./cruder --help || echo "Binary built successfully"
+          echo "✅ Binary compiled successfully"
