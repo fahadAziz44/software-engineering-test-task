@@ -144,6 +144,7 @@ curl -X POST http://localhost:8080/api/v1/users \
 - ✅ SQL injection prevention
 - ✅ Proper HTTP status codes
 - ✅ Structured error responses
+- ✅ **X-API-Key authentication** - Optional header-based authentication (401/403 responses)
 - ✅ **Dynamic configuration** - Separates sensitive data (env vars) from code (config.yaml)
 - ✅ **97.5% test coverage** - Comprehensive unit tests
 - ✅ **JSON structured logging** - Request tracing with unique IDs, latency tracking, automatic log levels
@@ -302,6 +303,38 @@ make coverage-html
 make validate
 ```
 
-See [TEST_API_README.md](./TEST_API_README.md) for complete testing documentation.
+---
+
+## Authentication
+
+The API supports optional **X-API-Key authentication** for securing endpoints:
+
+**How it works:**
+- If `API_KEY` environment variable is set → Authentication is **enabled**
+- If `API_KEY` is not set → Authentication is **disabled** (development mode)
+
+**Responses:**
+- ✅ Valid key → Request proceeds normally
+- ❌ Missing header → `401 Unauthorized`
+- ❌ Wrong key → `403 Forbidden`
+
+**Usage:**
+```bash
+# Enable authentication (add to .env)
+API_KEY=your-secret-key-here
+
+# Make authenticated request
+curl -H "X-API-Key: your-secret-key-here" http://localhost:8080/api/v1/users
+
+# Without key (401 Unauthorized)
+curl http://localhost:8080/api/v1/users
+# Response: {"error":"Unauthorized","message":"X-API-Key header is required"}
+
+# With wrong key (403 Forbidden)
+curl -H "X-API-Key: wrong-key" http://localhost:8080/api/v1/users
+# Response: {"error":"Forbidden","message":"Invalid API key"}
+```
+
+**Development**: Leave `API_KEY` commented out in `.env` to disable authentication during development.
 
 ---
