@@ -6,13 +6,12 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
-  workflow_dispatch:  # Allow manual trigger from GitHub UI
+  workflow_dispatch:  # Github UI manual trigger
 
 env:
   GO_VERSION: "1.25"
 
 jobs:
-  # Job 1: Code Quality (Linting)
   lint:
     name: Code Quality
     runs-on: ubuntu-latest
@@ -55,7 +54,7 @@ jobs:
       - name: Run security scanner
         run: $(go env GOPATH)/bin/gosec -exclude-dir=bin/database ./...
 
-  # Job 3: Unit Tests
+
   test:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -84,7 +83,7 @@ jobs:
           fi
           echo "✅ Coverage meets threshold"
 
-  # Job 4: Build Verification
+  
   build:
     name: Build
     runs-on: ubuntu-latest
