@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -24,7 +26,28 @@ type ServerConfig struct {
 }
 
 func Load(configPath string) (*Config, error) {
-	data, err := os.ReadFile(configPath)
+	// TODO: Review this solution before using in production
+	// Can not do  os.ReadFile(configPath) because it can be used to read files outside the application directory (prevents path traversal - G304)
+	// Get the working directory to create a scoped root
+	// -- NOTE: This is a alternate solution to prevent path traversal. Identified by gosec.
+	// see docs/SECURITY_FIX_PATH_TRAVERSAL.md for more detail
+	// -- COPIED: Should be reviewed before using in production ---
+	// --- COPY START ---
+	workDir, err := os.Getwd()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// This prevents reading files outside the application directory (prevents path traversal - G304)
+	root := os.DirFS(workDir)
+
+	// Clean the path to prevent directory traversal attempts like "../../../etc/passwd"
+	cleanPath := filepath.Clean(configPath)
+
+	// Read file using scoped filesystem (prevents path traversal)
+	data, err := fs.ReadFile(root, cleanPath)
+	// --- COPY END ---
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)
 	}
