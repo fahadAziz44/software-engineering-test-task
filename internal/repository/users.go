@@ -148,14 +148,12 @@ func (r *userRepository) Update(id uuid.UUID, req *model.UpdateUserRequest) (*mo
 	args = append(args, id)
 
 	// Safe: Using parameterized queries ($1, $2) - values go through args array
-	// #nosec G201 - False positive: Using parameterized queries with $1, $2, etc.
-	// We're building the SET clause dynamically, but all values are properly parameterized
-	query := fmt.Sprintf(` /* #nosec G201 */
+	query := fmt.Sprintf(`
 		UPDATE users
 		SET %s
 		WHERE id = $%d
 		RETURNING id, username, email, full_name, created_at, updated_at
-	`, strings.Join(updates, ", "), argPosition)
+	`, strings.Join(updates, ", "), argPosition) // #nosec G201
 
 	var user model.User
 	err := r.db.QueryRowContext(
