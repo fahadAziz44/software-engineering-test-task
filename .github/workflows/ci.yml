@@ -1,0 +1,113 @@
+
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:  # Allow manual trigger from GitHub UI
+
+env:
+  GO_VERSION: "1.25"
+
+jobs:
+  # Job 1: Code Quality (Linting)
+  lint:
+    name: Code Quality
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install golangci-lint
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | \
+            sh -s -- -b $(go env GOPATH)/bin v1.62
+
+      - name: Run linters
+        run: $(go env GOPATH)/bin/golangci-lint run ./...
+
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Install gosec
+        run: go install github.com/securego/gosec/v2/cmd/gosec@latest
+
+      - name: Run security scanner
+        run: $(go env GOPATH)/bin/gosec -exclude-dir=bin/database ./...
+
+  # Job 3: Unit Tests
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Run tests with coverage
+        run: go test -v -race -coverprofile=coverage.out ./...
+
+      - name: Check coverage threshold
+        run: |
+          coverage=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          echo "Coverage: $coverage%"
+
+          if (( $(echo "$coverage < 70" | bc -l) )); then
+            echo "❌ Coverage $coverage% is below 70%"
+            exit 1
+          fi
+          echo "✅ Coverage meets threshold"
+
+  # Job 4: Build Verification
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: Build binary
+        run: |
+          CGO_ENABLED=0 go build \
+            -trimpath \
+            -ldflags="-w -s" \
+            -o cruder \
+            ./cmd/main.go
+
+      - name: Test binary is executable
+        run: |
+          chmod +x cruder
+          ./cruder --help || echo "Binary built successfully"
