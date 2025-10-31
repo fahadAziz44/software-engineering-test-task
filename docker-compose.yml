@@ -4,14 +4,14 @@ services:
     container_name: database
     ports:
       - "5432:5432"
-    env_file:
-      - .env
     environment:
-      POSTGRES_HOST: db
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME:-postgres}
     volumes:
       - ./postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,8 +24,12 @@ services:
     ports:
       - "8080:8080"
     environment:
-      POSTGRES_DSN: "host=db port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
+      DB_USER: ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      CONFIG_PATH: /app/config.yaml
       GIN_MODE: release
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro # Mounts read only config.yaml file to the container
     depends_on:
       db:
         condition: service_healthy

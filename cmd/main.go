@@ -1,10 +1,12 @@
 package main
 
 import (
+	"cruder/internal/config"
 	"cruder/internal/controller"
 	"cruder/internal/handler"
 	"cruder/internal/repository"
 	"cruder/internal/service"
+	"fmt"
 	"log"
 	"os"
 
@@ -12,9 +14,19 @@ import (
 )
 
 func main() {
-	dsn := os.Getenv("POSTGRES_DSN")
-	if dsn == "" {
-		dsn = "host=localhost port=5432 user=postgres password=postgres dbname=postgres sslmode=disable"
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "config.yaml"
+	}
+
+	cfg, err := config.Load(configPath)
+	if err != nil {
+		log.Fatalf("failed to load config: %v", err)
+	}
+
+	dsn, err := cfg.BuildDSN()
+	if err != nil {
+		log.Fatalf("failed to build database connection string: %v", err)
 	}
 
 	dbConn, err := repository.NewPostgresConnection(dsn)
@@ -27,7 +39,10 @@ func main() {
 	controllers := controller.NewController(services)
 	r := gin.Default()
 	handler.New(r, controllers.Users)
-	if err := r.Run(); err != nil {
+
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	log.Printf("Starting server on %s", addr)
+	if err := r.Run(addr); err != nil {
 		log.Fatalf("failed to run server: %v", err)
 	}
 }
