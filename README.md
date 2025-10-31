@@ -109,8 +109,6 @@ make run
 
 If `DB_USER` and `DB_PASSWORD` are not set in environment variables, the application will fail with a clear error message.
 
-**For detailed configuration documentation**, see [CONFIGURATION_GUIDE.md](./docs/CONFIGURATION_GUIDE.md)
-
 ---
 
 ## API Endpoints
@@ -251,8 +249,6 @@ Automated quality checks run on every push to master:
 
 **Configuration**: `.github/workflows/ci.yml`
 
-**Documentation**: See [CI_PIPELINE_GUIDE.md](./docs/CI_PIPELINE_GUIDE.md) for GitHub Secrets setup and detailed pipeline explanation
-
 ---
 
 ## Logging
@@ -314,9 +310,9 @@ The API supports optional **X-API-Key authentication** for securing endpoints:
 - If `API_KEY` is not set → Authentication is **disabled** (development mode)
 
 **Responses:**
-- ✅ Valid key → Request proceeds normally
-- ❌ Missing header → `401 Unauthorized`
-- ❌ Wrong key → `403 Forbidden`
+- Valid key → Request proceeds normally
+- Missing header → `401 Unauthorized`
+- Wrong key → `403 Forbidden`
 
 **Usage:**
 ```bash
@@ -324,15 +320,8 @@ The API supports optional **X-API-Key authentication** for securing endpoints:
 API_KEY=your-secret-key-here
 
 # Make authenticated request
-curl -H "X-API-Key: your-secret-key-here" http://localhost:8080/api/v1/users
+curl -H "X-API-Key: {your-secret-key-here}" http://localhost:8080/api/v1/users
 
-# Without key (401 Unauthorized)
-curl http://localhost:8080/api/v1/users
-# Response: {"error":"Unauthorized","message":"X-API-Key header is required"}
-
-# With wrong key (403 Forbidden)
-curl -H "X-API-Key: wrong-key" http://localhost:8080/api/v1/users
-# Response: {"error":"Forbidden","message":"Invalid API key"}
 ```
 
 **Development**: Leave `API_KEY` commented out in `.env` to disable authentication during development.
