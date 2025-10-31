@@ -219,12 +219,9 @@ docker-compose down
 ## Documentation
 
 Comprehensive documentation available in `docs/`:
-- [CI_PIPELINE_GUIDE.md](./docs/CI_PIPELINE_GUIDE.md) - CI/CD pipeline and GitHub Secrets setup
-- [CONFIGURATION_GUIDE.md](./docs/CONFIGURATION_GUIDE.md) - Environment configuration and secret management
 - [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
 - [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) - Structured logging implementation
-- [REPOSITORY_PARTIAL_UPDATES_AND_DELETE.md](./docs/REPOSITORY_PARTIAL_UPDATES_AND_DELETE.md) - Repository layer design decisions
-- [SECRETS_MANAGEMENT_SUMMARY.md](./docs/SECRETS_MANAGEMENT_SUMMARY.md) - Secrets management overview
+- [SECURITY_FIX_PATH_TRAVERSAL.md](./docs/SECURITY_FIX_PATH_TRAVERSAL.md) - Path traversal vulnerability fix (G304/CWE-22)
 
 ---
 
