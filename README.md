@@ -1,13 +1,12 @@
 # CRUDER - User Management API
 
-A production-ready RESTful API for user management built with Go, Gin framework, and PostgreSQL. This project demonstrates clean architecture principles with proper separation of concerns.
+A RESTful API for user management built with Go, Gin framework, and PostgreSQL. This project demonstrates clean architecture principles with proper separation of concerns.
 
 
 The original task requirements can be found in [TASK.md](./TASK.md)
 
 
 ## Reviewer's Guide: Engineering Decisions
-This project was approached not just as a "checklist" but as an exercise in building a truly production-ready system. Here are some of the key design decisions and where to find them:
 
 - int vs. uuid: The task mentioned :uuid for endpoints, but the initial code used int IDs. To fix this at the foundation, the database migration was corrected to use UUIDs as primary keys for security and scalability.
 
