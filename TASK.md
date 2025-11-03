@@ -98,4 +98,22 @@ Write CD pipeline via Github Actions to deploy the changes to remote environment
 
 ## Comments
 
-Comments section for candidate
+Thank you for this assignment. I genuinely enjoyed this entire process and learned a great deal from this.
+
+It was a perfect framework for moving beyond just "making it work" and really thinking through what makes a good, maintainable backend system. I learned a ton about Go's ecosystem, but also about the "why" behind things like the layered architecture, how to properly separate concerns, and the difference between unit tests (like the service-layer tests) and full-stack integration tests.
+
+I went down a bit of a rabbit hole on the Docker task and was amazed at the results. By using a multi-stage distroless build and running as a nonroot user, the final image is not only way more secure but also tiny—I got it down to 36.4MB from a naive 1.87GB build. That was a huge win. I really enjoyed it
+
+I also implemented some of the bonus points to make the foundation more robust, like separating config.yaml from env secrets, the JSON logging middleware, and adding a graceful shutdown to main.go.
+
+There's, of course, a lot more that could be done. I didn't get to all the bonus points, but the next things I'd add would be proper integration tests (to run in CI), health check endpoints (/healthz, /readyz) for Kubernetes, and maybe an auth middleware.
+
+This project is a great foundation, but it also got me thinking about the whole engineering lifecycle, which is just as important as the code.
+How do we ship safely? We'd need Feature Flags (to avoid "scary releases") and Rollback-Readiness (to recover instantly).
+For the Engineer at 3 AM: What happens when a bug appears? The Observability we started (JSON logs) is the first step, but we'd need metrics and traces to debug quickly.
+For the New Teammate: How do we avoid "tribal knowledge"? We'd need better onboarding docs and a culture of mentoring so a new engineer can get up to speed and feel confident
+How should we release? making it somehow easy to realase and a culture of small often releases to avoid scary releases. and use some Feature Flags to not deploy unfinished features. etc.
+
+There's, of course, a lot more that could be added (like auth, formal integration tests, and health checks), but I'm proud of what I learned.
+It made me excite about Backend development and go beyond my speciality of frontend systems into building, maintaining and thinking about whole systems.
+Thanks again for the challenge.
