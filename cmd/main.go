@@ -7,7 +7,6 @@ import (
 	"cruder/internal/middleware"
 	"cruder/internal/repository"
 	"cruder/internal/service"
-	"fmt"
 	"log/slog"
 	"os"
 
@@ -18,25 +17,15 @@ func main() {
 	// Creating structured JSON logger early for consistent logging
 	logger := middleware.NewStructuredLogger()
 
-	configPath := os.Getenv("CONFIG_PATH")
-	if configPath == "" {
-		configPath = "config.yaml"
-	}
-
-	cfg, err := config.Load(configPath)
+	// Load all configuration from environment variables
+	cfg, err := config.LoadFromEnv()
 	if err != nil {
-		logger.Error("Failed to load config",
-			slog.String("error", err.Error()),
-			slog.String("config_path", configPath))
-		os.Exit(1)
-	}
-
-	dsn, err := cfg.BuildDSN()
-	if err != nil {
-		logger.Error("Failed to build database connection string",
+		logger.Error("Failed to load configuration from environment",
 			slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+
+	dsn := cfg.BuildDSN()
 
 	dbConn, err := repository.NewPostgresConnection(dsn)
 	if err != nil {
@@ -56,7 +45,7 @@ func main() {
 
 	handler.New(r, controllers.Users)
 
-	addr := fmt.Sprintf(":%d", cfg.Server.Port)
+	addr := ":" + cfg.Server.Port
 	logger.Info("Starting server",
 		slog.String("address", addr),
 		slog.String("environment", config.GetEnvironment()))

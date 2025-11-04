@@ -76,11 +76,7 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-
-    env:
-      DB_USER: ${{ secrets.CI_DB_USER }}
-      DB_PASSWORD: ${{ secrets.CI_DB_PASSWORD }}
-
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

@@ -38,8 +38,7 @@ EXPOSE 8080
 # Non-root user for security
 USER nonroot:nonroot
 
-ENV GIN_MODE=release \
-    POSTGRES_DSN=""
+ENV GIN_MODE=release
 
 ENTRYPOINT ["/cruder"]
 

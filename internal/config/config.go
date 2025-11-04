@@ -2,90 +2,63 @@ package config
 
 import (
 	"fmt"
-	"io/fs"
 	"os"
-	"path/filepath"
 
-	"gopkg.in/yaml.v3"
+	"github.com/kelseyhightower/envconfig"
 )
 
+// Config holds all application configuration loaded from environment variables
 type Config struct {
-	Database DatabaseConfig `yaml:"database"`
-	Server   ServerConfig   `yaml:"server"`
+	Database DatabaseConfig
+	Server   ServerConfig
 }
 
+// DatabaseConfig holds database connection parameters
 type DatabaseConfig struct {
-	Host    string `yaml:"host"`
-	Port    int    `yaml:"port"`
-	Name    string `yaml:"name"`
-	SSLMode string `yaml:"sslmode"`
+	Host     string `envconfig:"POSTGRES_HOST" default:"localhost"`
+	Port     int    `envconfig:"POSTGRES_PORT" default:"5432"`
+	User     string `envconfig:"POSTGRES_USER" required:"true"`
+	Password string `envconfig:"POSTGRES_PASSWORD" required:"true"`
+	Name     string `envconfig:"POSTGRES_DB" default:"postgres"`
+	SSLMode  string `envconfig:"POSTGRES_SSL_MODE" default:"disable"`
 }
 
+// ServerConfig holds server configuration
 type ServerConfig struct {
-	Port int `yaml:"port"`
+	Port string `envconfig:"PORT" default:"8080"`
 }
 
-func Load(configPath string) (*Config, error) {
-	// TODO: Review this solution before using in production
-	// Can not do  os.ReadFile(configPath) because it can be used to read files outside the application directory (prevents path traversal - G304)
-	// Get the working directory to create a scoped root
-	// -- NOTE: This is a alternate solution to prevent path traversal. Identified by gosec.
-	// see docs/SECURITY_FIX_PATH_TRAVERSAL.md for more detail
-	// -- COPIED: Should be reviewed before using in production ---
-	// --- COPY START ---
-	workDir, err := os.Getwd()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get working directory: %w", err)
-	}
-
-	// This prevents reading files outside the application directory (prevents path traversal - G304)
-	root := os.DirFS(workDir)
-
-	// Clean the path to prevent directory traversal attempts like "../../../etc/passwd"
-	cleanPath := filepath.Clean(configPath)
-
-	// Read file using scoped filesystem (prevents path traversal)
-	data, err := fs.ReadFile(root, cleanPath)
-	// --- COPY END ---
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
+// LoadFromEnv loads all configuration from environment variables using envconfig.
+// envconfig automatically:
+// - Reads environment variables based on struct tags
+// - Validates required fields (required:"true" tag)
+// - Sets default values (default:"value" tag)
+// - Converts types (string -> int, bool, etc.)
+// - Provides clear error messages
+func LoadFromEnv() (*Config, error) {
 	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
-		return nil, fmt.Errorf("failed to parse config file: %w", err)
+
+	if err := envconfig.Process("", &cfg); err != nil {
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
 	return &cfg, nil
 }
 
-// BuildDSN makes database connection string and throws an error if required environment variables are not set
-func (c *Config) BuildDSN() (string, error) {
-	user := os.Getenv("DB_USER")
-	password := os.Getenv("DB_PASSWORD")
-
-	if user == "" {
-		return "", fmt.Errorf("DB_USER environment variable is required")
-	}
-	if password == "" {
-		return "", fmt.Errorf("DB_PASSWORD environment variable is required")
-	}
-
-	dsn := fmt.Sprintf(
+// BuildDSN builds the PostgreSQL connection string from loaded configuration
+func (c *Config) BuildDSN() string {
+	return fmt.Sprintf(
 		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
 		c.Database.Host,
 		c.Database.Port,
-		user,
-		password,
+		c.Database.User,
+		c.Database.Password,
 		c.Database.Name,
 		c.Database.SSLMode,
 	)
-
-	return dsn, nil
 }
 
-// GetEnvironment returns the current runtime environment
+// GetEnvironment is used to distinguish between different runtime environments
 // Returns "production" if GIN_MODE is "release", otherwise "development"
 func GetEnvironment() string {
 	mode := os.Getenv("GIN_MODE")

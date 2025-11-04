@@ -8,6 +8,9 @@
 # Database files
 postgres_data
 
+# Archived configuration files
+config.yaml.old
+
 # Server management files
 .server.pid
 .server.log

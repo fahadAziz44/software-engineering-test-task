@@ -14,7 +14,7 @@ The original task requirements can be found in [TASK.md](./TASK.md)
 
 - Docker ("Minimal as possible"): This was a key focus. The final image is 36.4MB (a 98% reduction from a 1.8GB naive build). This was achieved with a distroless base, which also runs as a nonroot user for security. See the full analysis in [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md).
 
-- Hardcoded DSN: All hardcoded credentials were removed. The app now follows 12-Factor principles, loading non-sensitive config from config.yaml and reading sensitive secrets (DB_USER, DB_PASSWORD) from the environment.
+- Configuration: All hardcoded credentials were removed. The app now follows environment-based configuration (no config files). All settings (database host, port, credentials, server port) come from environment variables, making it cloud ready for any platform.
 
 - JSON Logging: A structured log/slog JSON logging middleware was implemented (internal/middleware/logger.go). It injects a request_id for traceability and automatically logs request/response metadata. See [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) for details.
 
@@ -84,32 +84,6 @@ docker-compose down -v
 
 ---
 
-## Configuration
-
-**Dynamic configuration separates sensitive data from code:**
-
-**Points**:
-- No more hardcoded passwords in source code
-- Non-sensitive config in `config.yaml` (host, port, database name)
-- Sensitive data in environment variables (username, password)
-
-**How it works**:
-```bash
-# 1. Copy environment template (first time only)
-cp .env.example .env
-
-# 2. Edit .env with your credentials (all variables are required - no fallback)
-DB_USER=postgres
-DB_PASSWORD=your_secure_password
-
-# 3. Run application - automatically loads config
-make run
-```
-
-If `DB_USER` and `DB_PASSWORD` are not set in environment variables, the application will fail with a clear error message.
-
----
-
 ## API Endpoints
 
 All endpoints use base URL: `http://localhost:8080/api/v1`
@@ -135,20 +109,19 @@ curl -X POST http://localhost:8080/api/v1/users \
 
 ## Key Features
 
-- ✅ UUID-based primary keys for security and scalability
-- ✅ Clean architecture with layered design
-- ✅ Comprehensive input validation
-- ✅ SQL injection prevention
-- ✅ Proper HTTP status codes
-- ✅ Structured error responses
-- ✅ **X-API-Key authentication** - Optional header-based authentication (401/403 responses)
-- ✅ **Dynamic configuration** - Separates sensitive data (env vars) from code (config.yaml)
-- ✅ **97.5% test coverage** - Comprehensive unit tests
-- ✅ **JSON structured logging** - Request tracing with unique IDs, latency tracking, automatic log levels
-- ✅ **Dockerized application** - Production-ready container (36MB)
-- ✅ **Docker Compose setup** - One-command development environment
-- ✅ **Multi-stage builds** - Optimized for size and security
-- ✅ **CI/CD pipeline** - Automated linting, security scanning, testing (golangci-lint + gosec)
+- UUID-based primary keys for security and scalability
+- Clean architecture with layered design
+- Comprehensive input validation
+- SQL injection prevention
+- Proper HTTP status codes
+- Structured error responses
+- **X-API-Key authentication** - Optional header-based authentication (401/403 responses)
+- **97.5% test coverage** - Comprehensive unit tests
+- **JSON structured logging** - Request tracing with unique IDs, latency tracking, automatic log levels
+- **Dockerized application** - Production-ready container (36MB)
+- **Docker Compose setup** - One-command development environment
+- **Multi-stage builds** - Optimized for size and security
+- **CI/CD pipeline** - Automated linting, security scanning, testing (golangci-lint + gosec)
 
 ---
 
@@ -321,5 +294,29 @@ curl -H "X-API-Key: {your-secret-key-here}" http://localhost:8080/api/v1/users
 ```
 
 **Development**: Leave `API_KEY` commented out in `.env` to disable authentication during development.
+
+---
+
+## Configuration
+We are using envconfig for configuration. I choose envconfig because of a standard way to handle configuration and it is ease of use.
+The benefits of using envconfig are:
+- Automatic validation
+- Automatic type conversion
+- Can enforce required and optional fields
+- Default values can be set
+- Clear error messages (Catch errors at compile time)
+- Self-documenting code via struct tags, One struct shows everything needed for configuration, easy to understand and maintain
+- Fail-Fast - App won't start if config is wrong
+- Centralized, not scattered across multiple files
+
+Environment-only configuration :
+- All configuration via environment variables
+- Single source of truth (`.env` file for local development)
+- Sensible defaults for non-sensitive config
+
+**Required variables**: `POSTGRES_USER`, `POSTGRES_PASSWORD`
+**Optional variables** (with defaults): `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_SSL_MODE`, `PORT`
+
+The application will fail with a clear error message if required environment variables are missing.
 
 ---

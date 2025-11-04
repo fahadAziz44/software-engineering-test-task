@@ -104,7 +104,7 @@ It was a perfect framework for moving beyond just "making it work" and really th
 
 I went down a bit of a rabbit hole on the Docker task and was amazed at the results. By using a multi-stage distroless build and running as a nonroot user, the final image is not only way more secure but also tiny—I got it down to 36.4MB from a naive 1.87GB build. That was a huge win. I really enjoyed it
 
-I also implemented some of the bonus points to make the foundation more robust, like separating config.yaml from env secrets, the JSON logging middleware, and adding a graceful shutdown to main.go.
+I also implemented some of the bonus points to make the foundation more robust, like separating environment variables from env secrets, the JSON logging middleware, and adding a graceful shutdown to main.go.
 
 There's, of course, a lot more that could be done. I didn't get to all the bonus points, but the next things I'd add would be proper integration tests (to run in CI), health check endpoints (/healthz, /readyz) for Kubernetes, and maybe an auth middleware.
 

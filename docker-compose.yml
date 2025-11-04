@@ -5,13 +5,14 @@ services:
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: ${DB_NAME:-postgres}
+      # Defaults are for development only; provide env vars for other environments
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
     volumes:
       - ./postgres_data:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -24,12 +25,15 @@ services:
     ports:
       - "8080:8080"
     environment:
-      DB_USER: ${DB_USER:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      CONFIG_PATH: /app/config.yaml
+      POSTGRES_HOST: db  # Container name for internal Docker networking
+      # Defaults are for development only; provide env vars for other environments
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+      POSTGRES_SSL_MODE: ${POSTGRES_SSL_MODE:-disable}
+      PORT: ${PORT:-8080}
       GIN_MODE: release
-    volumes:
-      - ./config.yaml:/app/config.yaml:ro # Mounts read only config.yaml file to the container
     depends_on:
       db:
         condition: service_healthy
