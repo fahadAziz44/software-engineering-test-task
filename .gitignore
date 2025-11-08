@@ -29,3 +29,12 @@ test.out
 # OS files
 .DS_Store
 Thumbs.db
+
+# archived documents
+docs/archive/*
+docs/Learnings/
+
+
+kubernetes/*/secret.yaml
+kubernetes/*/secrets/
+*.secret.yaml
