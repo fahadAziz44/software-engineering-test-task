@@ -1,0 +1,25 @@
+
+---
+# Staging Environment
+# - Used for testing before production
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: staging
+  labels:
+    environment: staging
+    managed-by: kubectl
+  annotations:
+    description: "Staging environment for testing before production"
+
+---
+# Production Environment
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: production
+  labels:
+    environment: production
+    managed-by: kubectl
+  annotations:
+    description: "Production environment serving live traffic"

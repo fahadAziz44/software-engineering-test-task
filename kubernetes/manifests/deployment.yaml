@@ -1,0 +1,203 @@
+---
+# Staging Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cruder-app
+  namespace: staging
+  labels:
+    app: cruder
+    component: api
+    version: v1.0.0
+    environment: staging
+  annotations:
+    description: "User management API - Staging deployment"
+spec:
+  # 2 replicas for staging (less than production)
+  replicas: 2
+
+  # Faster updates for staging (can tolerate brief downtime)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Create 1 extra pod
+      maxUnavailable: 1  # Can have 1 unavailable (50% with 2 replicas)
+
+  selector:
+    matchLabels:
+      app: cruder
+      component: api
+      environment: staging
+
+  template:
+    metadata:
+      labels:
+        app: cruder
+        component: api
+        version: v1.0.0
+        environment: staging
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: cruder
+        image: cruder:v1
+        imagePullPolicy: Never
+
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Lower resources for staging and it is just a guess for now(TODO: how to determine the resources?)
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+
+        # Graceful shutdown (5s is just a guess for now(TODO: how to determine the preStop time?))
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 5"]
+
+        envFrom:
+        - configMapRef:
+            name: cruder-config  # cruder-config in staging namespace
+        - secretRef:
+            name: postgres-secret  # postgres-secret in staging namespace
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+
+---
+# Production Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cruder-app
+  namespace: production
+  labels:
+    app: cruder
+    component: api
+    version: v1.0.0
+    environment: production
+  annotations:
+    description: "User management API - Production deployment"
+spec:
+  replicas: 3
+
+  # Safer updates for production (zero downtime) again it is just a guess for now(TODO: how to determine the maxUnavailable?)
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # Create 1 extra pod
+      maxUnavailable: 0  # Never have less than 3 running (zero downtime)
+
+  selector:
+    matchLabels:
+      app: cruder
+      component: api
+      environment: production
+
+  template:
+    metadata:
+      labels:
+        app: cruder
+        component: api
+        version: v1.0.0
+        environment: production
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: cruder
+        image: cruder:v1
+        imagePullPolicy: Never
+
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+
+        # Higher resources for production. Again is a guess for now(TODO: how to determine the resources?)
+        resources:
+          requests:
+            memory: "256Mi"  # 2x staging
+            cpu: "250m"      # 2.5x staging
+          limits:
+            memory: "512Mi"  # 2x staging
+            cpu: "1000m"     # 2x staging
+
+        # Graceful shutdown (longer wait for production)
+        lifecycle:
+          preStop:
+            exec:
+              command: ["/bin/sh", "-c", "sleep 10"]  # 10s vs 5s
+
+
+        envFrom:
+        - configMapRef:
+            name: cruder-config
+        - secretRef:
+            name: postgres-secret
+
+        securityContext:
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
+          runAsUser: 65532
+          capabilities:
+            drop:
+            - ALL
+          readOnlyRootFilesystem: false
+
+---

@@ -1,0 +1,78 @@
+
+---
+# Staging Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cruder-ingress
+  namespace: staging
+  labels:
+    app: cruder
+    environment: staging
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    # Enable CORS (for frontend access)
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+spec:
+  # Ingress class: We are using NGINX Ingress Controller
+  ingressClassName: nginx
+  
+  rules:
+  # Rule 1: staging.local → staging namespace and all paths go to cruder-service
+  - host: staging.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cruder-service
+            port:
+              number: 80
+
+---
+# Production Ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cruder-ingress
+  namespace: production
+  labels:
+    app: cruder
+    environment: production
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE"
+    # In real prod, we would specify exact origins, not "*" but marking here as todo
+    # TODO: Specify exact origins
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+    # Rate limiting (optional, for production)
+    nginx.ingress.kubernetes.io/limit-rps: "100"
+spec:
+  ingressClassName: nginx
+
+  rules:
+  # api.local → production namespace
+  - host: api.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: cruder-service
+            port:
+              number: 80
+
+  # TLS configuration (HTTPS) for production
+  # tls:
+  # - hosts:
+  #   - api.local
+  #   secretName: api-tls-secret  # TODO: Create with: kubectl create secret tls
+
+---

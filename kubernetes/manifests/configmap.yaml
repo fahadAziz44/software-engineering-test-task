@@ -1,0 +1,45 @@
+---
+# Staging ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cruder-config
+  namespace: staging
+  labels:
+    app: cruder
+    environment: staging
+data:
+  POSTGRES_HOST: "postgres.staging.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "postgres"
+  POSTGRES_SSL_MODE: "disable"
+
+  PORT: "8080"
+  GIN_MODE: "debug"  # Show detailed logs in staging
+
+  # Environment identifier
+  ENVIRONMENT: "staging"
+
+---
+# Production ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cruder-config
+  namespace: production
+  labels:
+    app: cruder
+    environment: production
+data:
+  POSTGRES_HOST: "postgres.production.svc.cluster.local"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "postgres"
+  POSTGRES_SSL_MODE: "disable"  # TODO: Use "require" in real production!
+
+  # Application configuration
+  PORT: "8080"
+  GIN_MODE: "release"  # Minimal logs in production
+
+  ENVIRONMENT: "production"
+
+---

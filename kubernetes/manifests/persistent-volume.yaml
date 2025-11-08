@@ -1,0 +1,91 @@
+
+---
+# Staging Environment Storage
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv-staging
+  labels:
+    environment: staging
+    type: local
+spec:
+  capacity:
+    storage: 2Gi  # 2 gigabytes for staging (smaller than prod)
+
+  accessModes:
+    - ReadWriteOnce  # Database needs read-write, single node is fine
+
+  persistentVolumeReclaimPolicy: Retain  
+  storageClassName: manual  # Manual provisioning (for local dev)
+  # TODO: use cloud-specific storage if we are using a cloud provider but for now we are using local directory
+  hostPath:
+    path: "/mnt/data/postgres-staging"
+    type: DirectoryOrCreate 
+
+---
+# Staging PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc-staging
+  namespace: staging
+  labels:
+    app: postgres
+    environment: staging
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: manual 
+
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# Production Environment Storage
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: postgres-pv-production
+  labels:
+    environment: production
+    type: local
+spec:
+  capacity:
+    storage: 10Gi  # 10 gigabytes for production (larger)
+
+  accessModes:
+    - ReadWriteOnce
+
+  persistentVolumeReclaimPolicy: Retain
+
+  storageClassName: manual
+
+
+# TODO: use cloud-specific storage if we are using a cloud provider
+  hostPath:
+    path: "/mnt/data/postgres-production"
+    type: DirectoryOrCreate
+
+---
+# Production PersistentVolumeClaim
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc-production
+  namespace: production
+  labels:
+    app: postgres
+    environment: production
+spec:
+  accessModes:
+    - ReadWriteOnce
+
+  storageClassName: manual
+
+  resources:
+    requests:
+      storage: 10Gi
+
+---
