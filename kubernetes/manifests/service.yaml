@@ -1,0 +1,64 @@
+---
+# Staging Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cruder-service
+  namespace: staging
+  labels:
+    app: cruder
+    component: api
+    environment: staging
+  annotations:
+    description: "Internal service for cruder API in staging"
+spec:
+  # ClusterIP: Internal only (accessible within cluster)
+  # Ingress will route external traffic to this service
+  type: ClusterIP
+
+  selector:
+    app: cruder
+    component: api
+    environment: staging
+
+  ports:
+  - name: http
+    port: 80          # Service listens on port 80
+    targetPort: 8080  # Forwards to pod port 8080
+    protocol: TCP
+
+  # TODO: to be thought about
+  # Session affinity: None (random load balancing)
+  # Use "ClientIP" for sticky sessions (same client → same pod)
+  sessionAffinity: None
+
+---
+# Production Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cruder-service
+  namespace: production
+  labels:
+    app: cruder
+    component: api
+    environment: production
+  annotations:
+    description: "Internal service for cruder API in production"
+spec:
+  type: ClusterIP
+
+  selector:
+    app: cruder
+    component: api
+    environment: production
+
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+
+  sessionAffinity: None
+
+---
