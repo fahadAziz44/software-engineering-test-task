@@ -9,10 +9,11 @@ metadata:
     app: cruder
     environment: staging
 data:
-  POSTGRES_HOST: "postgres.staging.svc.cluster.local"
+  # Neon managed PostgreSQL - Development Branch
+  POSTGRES_HOST: "ep-red-grass-agpqrggm.c-2.eu-central-1.aws.neon.tech"
   POSTGRES_PORT: "5432"
-  POSTGRES_DB: "postgres"
-  POSTGRES_SSL_MODE: "disable"
+  POSTGRES_DB: "neondb"
+  POSTGRES_SSL_MODE: "require"
 
   PORT: "8080"
   GIN_MODE: "debug"  # Show detailed logs in staging
@@ -31,10 +32,11 @@ metadata:
     app: cruder
     environment: production
 data:
-  POSTGRES_HOST: "postgres.production.svc.cluster.local"
+  # Neon managed PostgreSQL - Production Branch
+  POSTGRES_HOST: "ep-lively-morning-agbdtrzj-pooler.c-2.eu-central-1.aws.neon.tech"
   POSTGRES_PORT: "5432"
-  POSTGRES_DB: "postgres"
-  POSTGRES_SSL_MODE: "disable"  # TODO: Use "require" in real production!
+  POSTGRES_DB: "neondb"
+  POSTGRES_SSL_MODE: "require" 
 
   # Application configuration
   PORT: "8080"
