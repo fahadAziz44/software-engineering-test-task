@@ -1,5 +1,7 @@
 # Kubernetes Deployment
 
+**Note: This is the state of Kubernetes development before the deployment to GKE Autopilot cluster and Neon PostgreSQL as the managed database service. And demonstrates the concepts of Kubernetes deployment and management. For Latest State see [GKE Deployment Journey](./README_GKE.md)**
+
 Production-ready Kubernetes setup for CRUDER API with multi-environment support.
 
 ## What's Implemented
