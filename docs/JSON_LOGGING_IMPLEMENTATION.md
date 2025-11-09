@@ -19,21 +19,56 @@ Approach: Middleware-based logging using Go's standard `log/slog` package
 
 ### Features Implemented
 
-✅ **JSON Format**: All logs are valid JSON
-✅ **Structured Attributes**: Consistent field names across all logs
-✅ **Request Tracking**: Unique request ID for distributed tracing
-✅ **Response Headers**: X-Request-ID header added to all responses
-✅ **Context Integration**: Logger available in Gin context for controllers
-✅ **Log Levels**: Automatic level selection based on HTTP status codes:
+**JSON Format**: All logs are valid JSON
+**Structured Attributes**: Consistent field names across all logs
+**Request Tracking**: Unique request ID for distributed tracing
+**Response Headers**: X-Request-ID header added to all responses
+**Context Integration**: Logger available in Gin context for controllers
+**Log Levels**: Automatic level selection based on HTTP status codes:
 - INFO: 2xx status codes
 - WARN: 4xx status codes
 - ERROR: 5xx status codes and request failures
 
-✅ **Performance Metrics**: Request latency tracking
-✅ **Client Information**: IP address and user agent
-✅ **Error Logging**: Gin errors captured and logged
+**Performance Metrics**: Request latency tracking
+**Client Information**: IP address and user agent
+**Error Logging**: Gin errors captured and logged
 
 ---
+
+## Usage Examples
+
+
+### Using in Controllers
+
+Controllers can access the request-specific logger from context:
+
+```go
+func (c *UserController) GetUserByID(ctx *gin.Context) {
+	// Get request-specific logger with request_id
+	logger, exists := ctx.Get("logger")
+	if exists {
+		reqLogger := logger.(*slog.Logger)
+
+		// Log additional context
+		reqLogger.Info("Fetching user",
+			slog.String("user_id", id.String()),
+		)
+	}
+
+	// ... rest of handler
+}
+```
+
+### Logs will appear in JSON format:
+```json
+{"time":"...","level":"INFO","msg":"Starting server","address":":8080"}
+{"time":"...","level":"INFO","msg":"Request completed","request_id":"...","method":"GET","path":"/api/v1/users","status_code":200,...}
+```
+
+
+
+---
+
 
 ## Log Format
 
@@ -132,54 +167,3 @@ Each request generates a JSON log with the following fields:
   "address": ":8080"
 }
 ```
-
----
-
-## Usage Examples
-
-### Viewing Logs in Development
-
-```bash
-# Run application
-make run
-
-# Logs will appear in JSON format:
-{"time":"...","level":"INFO","msg":"Starting server","address":":8080"}
-{"time":"...","level":"INFO","msg":"Request completed","request_id":"...","method":"GET","path":"/api/v1/users","status_code":200,...}
-```
-
-### Viewing Logs in Docker
-
-```bash
-# Start with docker-compose
-docker-compose up
-
-# Follow logs
-docker-compose logs -f app
-
-# Logs are JSON formatted and easy to filter:
-docker-compose logs app | grep '"level":"ERROR"'
-docker-compose logs app | grep '"status_code":404'
-```
-
-### Using in Controllers
-
-Controllers can access the request-specific logger from context:
-
-```go
-func (c *UserController) GetUserByID(ctx *gin.Context) {
-	// Get request-specific logger with request_id
-	logger, exists := ctx.Get("logger")
-	if exists {
-		reqLogger := logger.(*slog.Logger)
-
-		// Log additional context
-		reqLogger.Info("Fetching user",
-			slog.String("user_id", id.String()),
-		)
-	}
-
-	// ... rest of handler
-}
-```
-
