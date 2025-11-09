@@ -10,23 +10,18 @@ metadata:
     app: cruder
     environment: staging
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    # Enable CORS (for frontend access)
-    nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
+    # GCE Ingress (Google Cloud Load Balancer) annotations
+    # NOTE: This is the default ingress class for GKE and nginx ingress controller is not installed on the cluster. so we need to use gce ingress class. It has its benefits aswell 
+    # like Google handles scaling, updates, security patches, etc.
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
 spec:
-  # Ingress class: We are using NGINX Ingress Controller
-  ingressClassName: nginx
-  
   rules:
-  # Rule 1: staging.local → staging namespace and all paths go to cruder-service
-  - host: staging.local
-    http:
+  # Rule 1: All traffic (no hostname filter for GCE) → staging namespace
+  - http:
       paths:
-      - path: /
-        pathType: Prefix
+      - path: /*
+        pathType: ImplementationSpecific
         backend:
           service:
             name: cruder-service
@@ -44,35 +39,24 @@ metadata:
     app: cruder
     environment: production
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
-    nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, PUT, PATCH, DELETE"
-    # In real prod, we would specify exact origins, not "*" but marking here as todo
-    # TODO: Specify exact origins
-    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
-    nginx.ingress.kubernetes.io/cors-allow-headers: "Content-Type, Authorization"
-    # Rate limiting (optional, for production)
-    nginx.ingress.kubernetes.io/limit-rps: "100"
+    kubernetes.io/ingress.class: "gce"
+    kubernetes.io/ingress.allow-http: "true"
+    # TODO: Consider enabling HTTPS and managed certificates:
+    # kubernetes.io/ingress.global-static-ip-name: "cruder-production-ip"
+    # networking.gke.io/managed-certificates: "cruder-production-cert"
 spec:
-  ingressClassName: nginx
 
   rules:
-  # api.local → production namespace
-  - host: api.local
-    http:
+  # All traffic  → production namespace
+  - http:
       paths:
-      - path: /
-        pathType: Prefix
+      - path: /*
+        pathType: ImplementationSpecific
         backend:
           service:
             name: cruder-service
             port:
               number: 80
 
-  # TLS configuration (HTTPS) for production
-  # tls:
-  # - hosts:
-  #   - api.local
-  #   secretName: api-tls-secret  # TODO: Create with: kubectl create secret tls
 
 ---

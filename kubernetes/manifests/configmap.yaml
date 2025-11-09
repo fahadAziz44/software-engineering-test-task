@@ -10,7 +10,7 @@ metadata:
     environment: staging
 data:
   # Neon managed PostgreSQL - Development Branch
-  POSTGRES_HOST: "ep-red-grass-agpqrggm.c-2.eu-central-1.aws.neon.tech"
+  POSTGRES_HOST: "ep-red-grass-agpqrggm-pooler.c-2.eu-central-1.aws.neon.tech"
   POSTGRES_PORT: "5432"
   POSTGRES_DB: "neondb"
   POSTGRES_SSL_MODE: "require"
