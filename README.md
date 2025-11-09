@@ -90,12 +90,16 @@ All endpoints use base URL: `http://localhost:8080/api/v1`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| GET | `/health` | Liveness probe (Kubernetes health check) |
+| GET | `/ready` | Readiness probe (Kubernetes readiness check) |
 | GET | `/users` | Get all users |
 | GET | `/users/username/:username` | Get user by username |
 | GET | `/users/id/:id` | Get user by UUID |
 | POST | `/users` | Create new user |
 | PATCH | `/users/id/:id` | Update user by UUID |
 | DELETE | `/users/id/:id` | Delete user by UUID |
+
+**Note**: Health probe endpoints (`/health` and `/ready`) are at the root level and do not require authentication.
 
 Example:
 ```bash
@@ -338,7 +342,26 @@ For detailed Kubernetes implementation documentation, see [Kubernetes implementa
 
 The application is deployed to **Google Kubernetes Engine (GKE) Autopilot** with **Neon PostgreSQL** as the managed database service.
 
- 
+### Live Deployment
+
+The application is **currently deployed and running** on GKE Autopilot. You can test it directly:
+
+- Production: `http://136.110.146.135`
+  - Health check: `http://136.110.146.135/health`
+  - API base: `http://136.110.146.135/api/v1`
+  
+- Staging: `http://34.49.250.233`
+  - Health check: `http://34.49.250.233/health`
+  - API base: `http://34.49.250.233/api/v1`
+
+**Example:**
+```bash
+# Test production health endpoint
+curl http://136.110.146.135/health
+
+# Test production API
+curl http://136.110.146.135/api/v1/users
+```
 
 ### Architecture Overview
 
