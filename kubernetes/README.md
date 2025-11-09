@@ -1,4 +1,7 @@
 # Kubernetes Deployment
+**NOTE: This is a local development setup for Kubernetes. It is not a production setup.**
+This implementation of kubernetes cluster has stateful set for PostgreSQL database.
+The intended purpose of this setup is to showcase and demonstrate the concepts of Kubernetes persistant volume, persistant volume claim, stateful set, services, deployment, ingress, etc. It is not a production-ready setup. As managing your own database in kubernetes requires alot of operational complexity that is not the focus of this assignment.
 
 Production-ready Kubernetes setup for CRUDER API with multi-environment support.
 
