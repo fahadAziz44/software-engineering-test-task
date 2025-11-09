@@ -300,8 +300,9 @@ curl -H "X-API-Key: {your-secret-key-here}" http://localhost:8080/api/v1/users
 ## Configuration
 We are using envconfig for configuration. I choose envconfig because of a standard way to handle configuration and it is ease of use.
 The benefits of using envconfig are:
+- Less Code to Write
 - Automatic validation
-- Automatic type conversion
+- Type-Safe: Automatic type conversion
 - Can enforce required and optional fields
 - Default values can be set
 - Clear error messages (Catch errors at compile time)
