@@ -332,3 +332,109 @@ A complete Local Development Kubernetes deployment setup is available to showcas
 For detailed Kubernetes implementation documentation, see [Kubernetes implementation documentation](./kubernetes/README.md).
 
 ---
+
+## Updated: Kubernetes Deployment on GKE Autopilot Cluster with Neon PostgreSQL as the managed database service.
+
+
+The application is deployed to **Google Kubernetes Engine (GKE) Autopilot** with **Neon PostgreSQL** as the managed database service.
+
+ 
+
+### Architecture Overview
+
+ 
+
+```
+
+┌─────────────────────────────────────────────────┐
+
+│           GKE Autopilot Cluster                 │
+
+│                                                 │
+
+│  ┌──────────────────┐    ┌──────────────────┐  │
+
+│  │ Staging Namespace│    │ Production NS    │  │
+
+│  │                  │    │                  │  │
+
+│  │  GCE Ingress     │    │  GCE Ingress     │  │
+
+│  │  34.49.250.233   │    │  136.110.146.135 │  │
+
+│  │       ↓          │    │       ↓          │  │
+
+│  │  Service (LB)    │    │  Service (LB)    │  │
+
+│  │       ↓          │    │       ↓          │  │
+
+│  │  Deployment      │    │  Deployment      │  │
+
+│  │  (2 replicas)    │    │  (3 replicas)    │  │
+
+│  └────────┬─────────┘    └────────┬─────────┘  │
+
+│           │                       │            │
+
+└───────────┼───────────────────────┼────────────┘
+
+            │                       │
+
+            ↓                       ↓
+
+    ┌───────────────┐       ┌───────────────┐
+
+    │ Neon Dev DB   │       │ Neon Prod DB  │
+
+    │ (SSL required)│       │ (SSL required)│
+
+    └───────────────┘       └───────────────┘
+
+```
+
+ 
+
+### Key Features
+
+ 
+
+- **Managed Database**: Neon PostgreSQL (fully managed, serverless)
+
+  - Staging → Neon development branch
+
+  - Production → Neon production branch
+
+  - SSL/TLS encryption(unencrypted connections are not allowed)
+
+ 
+
+- **GKE Autopilot**: Fully managed Kubernetes cluster
+  - Built-in security and compliance
+
+- **GCE Ingress Controller**: Built-in Google Cloud Load Balancer
+
+  - No need for nginx ingress controller because GCE ingress controller is built-in and we can use it to route traffic to our application. further more GKE Autopilot gives each namespace a separate load balancer and ip address.
+  - Production: `136.110.146.135`
+  - Staging: `34.49.250.233`
+
+- **Multi-Environment Setup**:
+
+  - Separate namespaces for staging and production
+
+  - Environment-specific configurations via ConfigMaps
+
+  - Different replica counts (2 for staging, 3 for production)
+
+ 
+
+### Changes for GKE Autopilot
+
+ We removed PostgreSQL StatefulSets (replaced with Neon managed database), Persistent Volumes, PVCs (no in-cluster database), NGINX Ingress Controller (GKE provides GCE ingress)
+
+ 
+
+We added Neon PostgreSQL connection strings in ConfigMaps, SSL/TLS requirement for database connections, GCE Ingress configuration, GHCR (GitHub Container Registry) for container images, Image pull secrets for private registry access
+
+ 
+
+For detailed deployment instructions and manifest files, see [Kubernetes Deployment Guide](./kubernetes/README.md).
