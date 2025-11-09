@@ -45,7 +45,7 @@ kubectl get all -n staging
 kubectl get all -n production
 ```
 
-## 📋 Manifest Files
+## Manifest Files
 
 | File | What It Does |
 |------|--------------|
@@ -83,8 +83,22 @@ Look for `TODO:` tags in manifest files for production enhancements:
    - Adjust limits based on real workload
 5. Cloud specific storage(`persistent-volume.yaml`)
 
+## Production Considerations: Database Storage
 
-## 🔍 Key Configuration Differences
+The current setup uses PostgreSQL as a StatefulSet with `hostPath` storage, which is ideal for local testing . However, this approach has limitations for public cloud deployments
+
+- In managed cloud clusters, nodes are ephemeral and can be terminated, replaced, or auto-scaled at any time, If the node is lost, the database data is lost
+- Running stateful databases inside Kubernetes requires Adds significant operational complexity that Involves managing backups, replication, monitoring,failover etc. While I belive they are interesting problems to solve, I don't think it's a good idea to solve them in this assignment.
+
+
+**Production Recommendation:**
+For production deployments, use a **managed database service** (e.g., AWS RDS, Google Cloud SQL, Azure Database) instead of running PostgreSQL in-cluster. This will provide:
+- Automatic backups and point-in-time recovery
+- High availability and failover
+- Managed scaling and maintenance
+- Reduced operational overhead
+
+## Key Configuration Differences
 
 | Setting | Staging | Production |
 |---------|---------|------------|
@@ -102,4 +116,5 @@ Look for `TODO:` tags in manifest files for production enhancements:
 
 ---
 
-**Note**: For production deployment, review and complete all `TODO:` items in manifest files and this README.
+**Note**: For production deployment, review and complete all `TODO:` items in manifest files and this README. and also consider the production considerations for database storage.
+if you have any questions or suggestions, please feel free to reach out to me.
