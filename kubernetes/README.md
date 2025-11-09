@@ -73,15 +73,13 @@ kubectl get all -n production
 
 Look for `TODO:` tags in manifest files for production enhancements:
 1. TLS/SSL Certificates (`ingress.yaml`)
-   - Add cert-manager for automatic SSL certificates
+   - Add Google Cloud Load Balancer for SSL certificates
    - Enable HTTPS with proper TLS configuration
-2. Specify exact origins for CORS(`ingress.yaml`)
-3. Specify POSTGRES_SSL_MODE for production(`configmap.yaml`)
+2. Specify POSTGRES_SSL_MODE for production(`configmap.yaml`)
    - Use "require" in real production
-4. Resource tuning(`deployment.yaml`)
+3. Resource tuning(`deployment.yaml`)
    - Monitor actual CPU/memory usage
    - Adjust limits based on real workload
-5. Cloud specific storage(`persistent-volume.yaml`)
 
 
 ## 🔍 Key Configuration Differences

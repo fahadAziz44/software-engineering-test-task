@@ -325,9 +325,9 @@ The application will fail with a clear error message if required environment var
 
 A complete Local Development Kubernetes deployment setup is available to showcase Kubernetes concepts including Persistent Volumes (PV), Persistent Volume Claims (PVC), StatefulSets, Deployments, Services, Ingress etc.
 
-**Note**: The Kubernetes implementation with Persistent Volume storage for PostgreSQL is available in the branch `feature/k8s_with_persistant-storage`. This branch demonstrates Kubernetes concepts including StatefulSets and persistent storage.
+**Note**: The Kubernetes implementation with Persistent Volume storage for PostgreSQL is available in `./kubernetes/Readme.md` in the branch `feature/k8s_with_persistant-storage`. That branch demonstrates Kubernetes concepts including StatefulSets and persistent storage.
 
-**Production Setup**: In the master branch, production deployments use a **managed database service** instead of running PostgreSQL in-cluster for better reliability and reduced operational complexity.
+**Production Setup**: In the `master` branch, production deployments use a **managed database service** instead of running PostgreSQL in-cluster for better reliability and reduced operational complexity.
 
 For detailed Kubernetes implementation documentation, see [Kubernetes implementation documentation](./kubernetes/README.md).
 
