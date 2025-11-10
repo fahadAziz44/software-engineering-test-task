@@ -1,11 +1,10 @@
-
-name: CI
+name: CI - Quality Gates
 
 on:
   push:
-    branches: [ master ]
+    branches: ['**']  # All branches including master
   pull_request:
-    branches: [ master ]
+    branches: [master]
   workflow_dispatch:  # Github UI manual trigger
 
 env:
