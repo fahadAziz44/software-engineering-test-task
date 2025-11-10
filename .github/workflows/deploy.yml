@@ -8,7 +8,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository_owner_lowercase }}/cruder
+  IMAGE_NAME: ${{ github.repository_owner }}/cruder
   GKE_CLUSTER: autopilot-cluster-1
   GKE_REGION: europe-central2
 
@@ -26,10 +26,16 @@ jobs:
     outputs:
       image-tag: ${{ steps.meta.outputs.tags }}
       short-sha: ${{ steps.vars.outputs.short_sha }}
+      owner: ${{ steps.repo.outputs.owner }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set repository owner (lowercase)
+        id: repo
+        run: |
+          echo "owner=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Set output variables
         id: vars
@@ -46,7 +52,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder
           tags: |
             type=sha,format=short
             type=raw,value=latest
@@ -61,15 +67,15 @@ jobs:
           platforms: linux/amd64
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:${{ steps.vars.outputs.short_sha }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Image digest
         run: |
           echo "✅ Built and pushed image:"
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.vars.outputs.short_sha }}"
+          echo "${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:${{ steps.vars.outputs.short_sha }}"
 
   # Job 2: Deploy to Staging (automatic)
   deploy-staging:
@@ -104,7 +110,7 @@ jobs:
       - name: Update deployment image
         run: |
           kubectl set image deployment/cruder-app \
-            cruder-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.short-sha }} \
+            cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
             -n staging
 
       - name: Wait for rollout to complete
@@ -139,7 +145,7 @@ jobs:
       - name: Deployment summary
         run: |
           echo "::notice::✅ Successfully deployed to staging"
-          echo "::notice::Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.short-sha }}"
+          echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
           echo "::notice::URL: http://34.49.250.233"
 
   # Job 3: Deploy to Production (manual approval required)
@@ -175,7 +181,7 @@ jobs:
       - name: Update deployment image
         run: |
           kubectl set image deployment/cruder-app \
-            cruder-app=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.short-sha }} \
+            cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
             -n production
 
       - name: Wait for rollout to complete
@@ -210,7 +216,7 @@ jobs:
       - name: Deployment summary
         run: |
           echo "::notice::🚀 Successfully deployed to PRODUCTION"
-          echo "::notice::Image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.build.outputs.short-sha }}"
+          echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
           echo "::notice::URL: http://136.110.146.135"
 
       - name: Notify on failure
