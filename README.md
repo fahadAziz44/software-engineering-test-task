@@ -126,7 +126,8 @@ curl -X POST http://localhost:8080/api/v1/users \
 - **Docker Compose setup** - One-command development environment
 - **Multi-stage builds** - Optimized for size and security
 - **CI/CD pipeline** - Automated linting, security scanning, testing (golangci-lint + gosec)
-
+- **Kubernetes deployment** - Kubernetes deployment to GKE Autopilot cluster.
+- **Neon PostgreSQL** - Neon PostgreSQL as the managed database service.
 ---
 
 ## Docker Implementation
@@ -203,24 +204,18 @@ Comprehensive documentation available in `docs/`:
 
 ## CI/CD Pipeline
 
-Automated quality checks run on every push to master:
+Two-workflow architecture following production best practices: **CI for quality gates, CD for deployment**.
 
-**Key Features:**
-- CI catches bugs early - Before they reach production
-- 4 automated checks - Lint, Security, Tests, Build
-- Jobs run in parallel
-- Must pass to merge
-- Takes ~45 seconds to run in parallel
+#### CI Workflow (`.github/workflows/ci.yml`)
+**Triggers**: All branches and PRs
+**Jobs** (parallel, ~45s): Lint → Security Scan → Tests → Build Verification
 
-**Pipeline Jobs** (parallel execution):
-- **Code Quality** - golangci-lint (50+ linters including go vet, go fmt, errcheck)
-- **Security Scan** - gosec (SQL injection, hardcoded credentials, crypto issues)
-- **Unit Tests** - go test with race detection
-- **Build Verification** - Ensures code compiles successfully
-
-**Security**: Uses GitHub Secrets for credentials (never hardcoded)
-
-**Configuration**: `.github/workflows/ci.yml`
+#### CD Workflow (`.github/workflows/deploy.yml`)
+**Triggers**: Push to `master` only
+**Jobs** (sequential, ~10-15 mins):
+1. Build Docker Image → Push to ghcr.io
+2. Deploy to Staging (automatic, 2 replicas)
+3. Deploy to Production (manual approval, 3 replicas)
 
 ---
 
