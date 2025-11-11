@@ -13,15 +13,15 @@ metadata:
   annotations:
     description: "User management API - Staging deployment"
 spec:
-  # 2 replicas for staging (less than production)
-  replicas: 2
+  # 1 replica for staging (demo/testing environment - cost optimized)
+  replicas: 1
 
   # Faster updates for staging (can tolerate brief downtime)
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 1        # Create 1 extra pod
-      maxUnavailable: 1  # Can have 1 unavailable (50% with 2 replicas)
+      maxUnavailable: 0  # Changed to 0 to avoid downtime even with 1 replica
 
   selector:
     matchLabels:
@@ -71,14 +71,15 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 3
 
-        # Lower resources for staging and it is just a guess for now(TODO: how to determine the resources?)
+        # GKE Autopilot minimum: 250m CPU, 512Mi memory (billing enforced at these minimums)
+        # Optimized for cost while meeting Autopilot requirements(TODO: how to determine the resources?)
         resources:
           requests:
-            memory: "128Mi"
-            cpu: "100m"
+            memory: "512Mi"  # Autopilot minimum (was 128Mi, but billed at 512Mi anyway)
+            cpu: "250m"      # Autopilot minimum (was 100m, but billed at 250m anyway)
           limits:
-            memory: "256Mi"
-            cpu: "500m"
+            memory: "1Gi"    # 2x requests (reasonable headroom for simple CRUD API)
+            cpu: "500m"      # 2x requests
 
         # Graceful shutdown (5s is just a guess for now(TODO: how to determine the preStop time?))
         lifecycle:
@@ -116,14 +117,15 @@ metadata:
   annotations:
     description: "User management API - Production deployment"
 spec:
-  replicas: 3
+  # 2 replicas for production (cost optimized while maintaining HA)
+  replicas: 2
 
   # Safer updates for production (zero downtime) again it is just a guess for now(TODO: how to determine the maxUnavailable?)
   strategy:
     type: RollingUpdate
     rollingUpdate:
-      maxSurge: 1        # Create 1 extra pod
-      maxUnavailable: 0  # Never have less than 3 running (zero downtime)
+      maxSurge: 1        # Create 1 extra pod during rollout
+      maxUnavailable: 0  # Never have less than 2 running (zero downtime)
 
   selector:
     matchLabels:
@@ -143,6 +145,7 @@ spec:
         prometheus.io/port: "8080"
         prometheus.io/path: "/metrics"
     spec:
+  
       imagePullSecrets:
       - name: ghcr-secret
       containers:
@@ -173,14 +176,15 @@ spec:
           timeoutSeconds: 5
           failureThreshold: 3
 
-        # Higher resources for production. Again is a guess for now(TODO: how to determine the resources?)
+        # GKE Autopilot minimum: 250m CPU, 512Mi memory
+        # Production uses same per-pod resources as staging (scale via replicas, not pod size)
         resources:
           requests:
-            memory: "256Mi"  # 2x staging
-            cpu: "250m"      # 2.5x staging
+            memory: "512Mi"  # Autopilot minimum (same as staging)
+            cpu: "250m"      # Autopilot minimum (same as staging)
           limits:
-            memory: "512Mi"  # 2x staging
-            cpu: "1000m"     # 2x staging
+            memory: "1Gi"    # 2x requests (same headroom as staging)
+            cpu: "500m"      # 2x requests (can increase to 750m if needed)
 
         # Graceful shutdown (longer wait for production)
         lifecycle:
