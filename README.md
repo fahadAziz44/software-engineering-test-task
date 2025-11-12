@@ -154,9 +154,9 @@ FROM gcr.io/distroless/static-debian12
 - Optimised while keeping in mind storage, bandwidth and deployment time.
 - Static Binaries Enabled to support minimal image.
 
-### Docker Compose Setup
+### Docker Compose
 
-Full development environment (app + database) orchestrated with health checks:
+Full development environment (app + database):
 
 ```yaml
 services:
@@ -171,19 +171,6 @@ services:
         condition: service_healthy
 ```
 
-### Usage
-
-```bash
-# Start everything (one command)
-docker-compose up --build
-
-# View logs
-docker-compose logs -f app
-
-# Stop
-docker-compose down
-```
-
 ### Technical Decisions
 
 1. **Distroless over Alpine** for runtime: Smaller attack surface, built-in CA certs
@@ -191,14 +178,7 @@ docker-compose down
 3. **Build cache optimization**: Dependencies cached separately from source code
 4. **.dockerignore**: Reduces build context from ~250MB to ~2MB
 
----
-
-## Documentation
-
-Comprehensive documentation available in `docs/`:
 - [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
-- [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) - Structured logging implementation
-- [SECURITY_FIX_PATH_TRAVERSAL.md](./docs/SECURITY_FIX_PATH_TRAVERSAL.md) - Path traversal vulnerability fix (G304/CWE-22)
 
 ---
 
@@ -473,3 +453,12 @@ For detailed deployment instructions and manifest files, see [Kubernetes Deploym
 - **HTTPS/TLS** - SSL certificates, Secure communication between clients and server
 - **API documentation (Swagger/OpenAPI)** - Self-documenting API with interactive explorer
 - **Feature flags** - Avoid "scary releases", deploy unfinished features safely
+---
+
+## Documentation
+
+Comprehensive documentation available in `docs/`:
+- [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
+- [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) - Structured logging implementation
+
+---
