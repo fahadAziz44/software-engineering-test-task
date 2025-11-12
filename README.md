@@ -296,12 +296,12 @@ For detailed Kubernetes implementation documentation, see [Kubernetes implementa
 
 ---
 
-## Updated: Kubernetes Deployment on GKE Autopilot Cluster with Neon PostgreSQL as the managed database service.
+### Updated: Kubernetes Deployment on GKE Autopilot Cluster with Neon PostgreSQL as the managed database service.
 
 
 The application is deployed to **Google Kubernetes Engine (GKE) Autopilot** with **Neon PostgreSQL** as the managed database service.
 
-### Live Deployment
+#### Live Deployment
 
 The application is **currently deployed and running** on GKE Autopilot. You can test it directly:
 
@@ -322,7 +322,7 @@ curl http://136.110.146.135/health
 curl http://136.110.146.135/api/v1/users
 ```
 
-### Architecture Overview
+#### Architecture Overview
 
  
 
@@ -376,7 +376,7 @@ curl http://136.110.146.135/api/v1/users
 
  **Edit**: I have scaled down the replicas to 1 for staging and 2 for production to save costs.
 
-### Key Features
+#### Key Features
 
  
 
@@ -436,7 +436,6 @@ For detailed deployment instructions and manifest files, see [Kubernetes Deploym
 - **Google Cloud Armor** - WAF and DDoS protection at load balancer level
 - **Feature flags** - Gradual rollouts and safe feature deployment
 
-See [FUTURE_ACTIONS_AND_FEATURES.md](./docs/FUTURE_ACTIONS_AND_FEATURES.md) for detailed roadmap.
 ---
 
 ## Documentation
@@ -444,5 +443,6 @@ See [FUTURE_ACTIONS_AND_FEATURES.md](./docs/FUTURE_ACTIONS_AND_FEATURES.md) for 
 Comprehensive documentation available in `docs/`:
 - [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
 - [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) - Structured logging implementation
+- [Kubernetes Deployment Guide](./kubernetes/README.md) - Kubernetes deployment guide
 
 ---
