@@ -119,14 +119,26 @@ jobs:
 
       - name: Verify deployment
         run: |
-          # Wait for pods to be ready
-          kubectl wait --for=condition=ready pod \
-            -l app=cruder,environment=staging \
-            -n staging \
-            --timeout=300s
+          echo "Checking deployment status..."
 
-          # Check pod status
+          # Get pod status (for visibility, but don't fail on transient states)
           kubectl get pods -n staging -l app=cruder
+
+          # Verify all replicas are ready using deployment-level status (not pod-level)
+          # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
+          # and new pods, causing "pod not found" errors. Deployment status only counts pods
+          # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
+          READY_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.status.readyReplicas}')
+          DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.spec.replicas}')
+
+          echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
+
+          if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
+            echo "✅ All replicas are ready"
+          else
+            echo "❌ Not all replicas are ready"
+            exit 1
+          fi
 
       - name: Run smoke tests
         run: |
@@ -190,14 +202,26 @@ jobs:
 
       - name: Verify deployment
         run: |
-          # Wait for pods to be ready
-          kubectl wait --for=condition=ready pod \
-            -l app=cruder,environment=production \
-            -n production \
-            --timeout=600s
+          echo "Checking deployment status..."
 
-          # Check pod status
+          # Get pod status (for visibility, but don't fail on transient states)
           kubectl get pods -n production -l app=cruder
+
+          # Verify all replicas are ready using deployment-level status (not pod-level)
+          # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
+          # and new pods, causing "pod not found" errors. Deployment status only counts pods
+          # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
+          READY_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.status.readyReplicas}')
+          DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.spec.replicas}')
+
+          echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
+
+          if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
+            echo "✅ All replicas are ready"
+          else
+            echo "❌ Not all replicas are ready"
+            exit 1
+          fi
 
       - name: Run smoke tests
         run: |
@@ -224,3 +248,4 @@ jobs:
         run: |
           echo "::error::❌ Production deployment failed!"
           echo "::error::Consider rolling back with: kubectl rollout undo deployment/cruder-app -n production"
+ 
