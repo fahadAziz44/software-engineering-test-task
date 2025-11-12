@@ -1,7 +1,12 @@
 # CRUDER - User Management API
 
-A RESTful API for user management built with Go, Gin framework, and PostgreSQL. This project demonstrates clean architecture principles with proper separation of concerns.
+A CRUD API for user management built with Go, Gin framework, and PostgreSQL. Except for terraform, all the other features are implemented mentioned in the [TASK.md](./TASK.md) file.
 
+**Quick look:**
+- **36MB Docker image** - 98% size reduction from naive build (1.87GB → 36MB)
+- **Live deployment** - Production: http://136.110.146.135 | Staging: http://34.49.250.233
+- **CI/CD pipeline** - Automated quality gates (lint, security, tests) + deployment
+- **Structured logging** - JSON logs with request tracing and automatic log levels
 
 The original task requirements can be found in [TASK.md](./TASK.md)
 
@@ -57,8 +62,6 @@ For production-parity testing or CI/CD, use Docker Compose to run the complete c
 # Build and start both database and application
 docker-compose up --build
 
-# Or run in background
-docker-compose up -d --build
 ```
 
 ### View Logs
@@ -153,6 +156,21 @@ FROM gcr.io/distroless/static-debian12
 - Base Image with No shell, no package manager & runs as non-root (uid 65532) to minimize attack surface and security vulnerabilities.
 - Optimised while keeping in mind storage, bandwidth and deployment time.
 - Static Binaries Enabled to support minimal image.
+
+#### Image Versioning
+
+Images are tagged with commit SHA for immutable, traceable deployments. :
+
+```bash
+# Each commit builds a unique image
+ghcr.io/fahadaziz44/cruder:2458f78  # Commit SHA tag
+```
+This will help us to rollback, traceability and reproducibility to any previous version if needed.
+
+**How it works:**
+- CI/CD automatically tags images with short commit SHA (`git rev-parse --short HEAD`)
+- Kubernetes deployments reference specific SHA tags
+- Rollback: `kubectl set image deployment/cruder-app cruder-app=ghcr.io/.../cruder:PREVIOUS_SHA -n production`
 
 ### Docker Compose
 
@@ -438,21 +456,21 @@ Spot Pods for Staging.
 For detailed deployment instructions and manifest files, see [Kubernetes Deployment Guide](./kubernetes/README.md).
 
 
-## Future Actions and Features
-- **Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL as asked in the task.
-- **Rate limiting** - Protect API from abuse
-- **Pagination for GET /users** - Handle large user lists efficiently
-- **JWT authentication** - Secure API endpoints
-- **Integration tests** - Spin up PostgreSQL in GitHub Actions, run migrations, start app, run test-api.sh
-- **Automated Database Migrations** - Thinking about how migration strategy to be implemented, Run migrations on deployment pipeline,
-- **Rollback readiness** - Recover instantly from bad deployments
-- **Monitoring setup** - Set up monitoring tools.
-- **Architecture Decision Records (ADRs)** - Record all architecture decisions
-- **Set up alerts** - Set up alerts for metrics
-- **Google Cloud Armor** - For current stage of the project, WAF, DDoS protection at load balancer level, Mitigate OWASP Top 10 risks
-- **HTTPS/TLS** - SSL certificates, Secure communication between clients and server
-- **API documentation (Swagger/OpenAPI)** - Self-documenting API with interactive explorer
-- **Feature flags** - Avoid "scary releases", deploy unfinished features safely
+### Future Enhancements
+- **Rate limiting** - Protect API from abuse and DoS attacks
+- **Integration tests** - End-to-end API validation in CI/CD pipeline
+- **HTTPS/TLS** - SSL certificates for secure production communication
+
+- **Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL
+- **Monitoring setup** - Prometheus/Grafana or Google Cloud Monitoring with alerts
+- **Automated Database Migrations** - Run migrations as part of deployment pipeline
+- **API documentation** - Swagger/OpenAPI for self-documenting API
+- **JWT authentication** - Per-user authentication (currently using API key)
+- **Pagination** - Handle large user lists efficiently
+- **Google Cloud Armor** - WAF and DDoS protection at load balancer level
+- **Feature flags** - Gradual rollouts and safe feature deployment
+
+See [FUTURE_ACTIONS_AND_FEATURES.md](./docs/FUTURE_ACTIONS_AND_FEATURES.md) for detailed roadmap.
 ---
 
 ## Documentation
