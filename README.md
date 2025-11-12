@@ -410,7 +410,7 @@ curl http://136.110.146.135/api/v1/users
 
 ```
 
- 
+ **Edit**: I have scaled down the replicas to 1 for staging and 2 for production to save costs.
 
 ### Key Features
 
@@ -459,15 +459,17 @@ For detailed deployment instructions and manifest files, see [Kubernetes Deploym
 
 
 ## Future Actions and Features
-**Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL
-**Rate limiting** - Protect API from abuse
-**Request logging middleware** - Track all API requests
-**Integration tests** - Spin up PostgreSQL in GitHub Actions, run migrations, start app, run test-api.sh
-**Automated Database Migrations** - Run migrations on deployment pipeline,
-**Rollback readiness** - Recover instantly from bad deployments
-**Architecture Decision Records (ADRs)** - Record all architecture decisions
-**Set up alerts** - Set up alerts for metrics
-**Google Cloud Armor** - WAF, DDoS protection at load balancer level, Mitigate OWASP Top 10 risks
-**HTTPS/TLS** - SSL certificates, Secure communication between clients and server
-**API documentation (Swagger/OpenAPI)** - Self-documenting API with interactive explorer
-**Feature flags** - Avoid "scary releases", deploy unfinished features safely
+- **Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL as asked in the task.
+- **Rate limiting** - Protect API from abuse
+- **Pagination for GET /users** - Handle large user lists efficiently
+- **JWT authentication** - Secure API endpoints
+- **Integration tests** - Spin up PostgreSQL in GitHub Actions, run migrations, start app, run test-api.sh
+- **Automated Database Migrations** - Thinking about how migration strategy to be implemented, Run migrations on deployment pipeline,
+- **Rollback readiness** - Recover instantly from bad deployments
+- **Monitoring setup** - Set up monitoring tools.
+- **Architecture Decision Records (ADRs)** - Record all architecture decisions
+- **Set up alerts** - Set up alerts for metrics
+- **Google Cloud Armor** - For current stage of the project, WAF, DDoS protection at load balancer level, Mitigate OWASP Top 10 risks
+- **HTTPS/TLS** - SSL certificates, Secure communication between clients and server
+- **API documentation (Swagger/OpenAPI)** - Self-documenting API with interactive explorer
+- **Feature flags** - Avoid "scary releases", deploy unfinished features safely
