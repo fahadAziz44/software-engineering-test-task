@@ -30,59 +30,25 @@ The original task requirements can be found in [TASK.md](./TASK.md)
 - CI/CD Pipeline: The CI pipeline in .github/workflows/ci.yml runs lint, security scans, tests, and builds in parallel for fast, reliable feedback.
 
 ---
-## Quick Start (Local Development - Recommended)
+## Getting Started
 
-For fast iteration during development, run the database in Docker and the app locally:
+The application requires PostgreSQL. Run it locally with Docker Compose:
 
-### 1. Start Database
 ```bash
-make db
-```
+# Start database and application
+docker-compose up --build
 
-### 2. Run Migrations
-```bash
+# In another terminal, run database migrations
 make migrate-up
-```
-
-### 3. Run Application
-```bash
-make run
 ```
 
 The API will be available at `http://localhost:8080/api/v1`
 
----
-
-## Docker Compose (Production Testing)
-
-For production-parity testing or CI/CD, use Docker Compose to run the complete containerized environment:
-
-### Start Everything
+**For local development** (database in Docker, app runs locally):
 ```bash
-# Build and start both database and application
-docker-compose up --build
-
-```
-
-### View Logs
-```bash
-# All services
-docker-compose logs -f
-
-# Just application
-docker-compose logs -f app
-
-# Just database
-docker-compose logs -f db
-```
-
-### Stop Everything
-```bash
-# Stop and remove containers
-docker-compose down
-
-# Stop, remove containers, and clean volumes
-docker-compose down -v
+make db          # Start PostgreSQL container
+make migrate-up  # Run migrations
+make run         # Run Go application
 ```
 
 ---
