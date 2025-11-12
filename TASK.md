@@ -114,6 +114,6 @@ For the Engineer at 3 AM: What happens when a bug appears? The Observability we 
 For the New Teammate: How do we avoid "tribal knowledge"? We'd need better onboarding docs and a culture of mentoring so a new engineer can get up to speed and feel confident
 How should we release? making it somehow easy to realase and a culture of small often releases to avoid scary releases. and use some Feature Flags to not deploy unfinished features. etc.
 
-There's, of course, a lot more that could be added (like adopting context propogation patter, auth, formal integration tests, and health checks), but I'm proud of what I learned.
-It made me excite about Backend development and go beyond my speciality of frontend systems into building, maintaining and thinking about whole systems.
+There's, of course, a lot more that could be added (like using terraform to get resources ready, Monitoring setup, adopting context propogation pattern, formal integration tests, etc. I would love to explore these and build more to get this project production ready easy to maintain and scale.) but I'm proud of what I built & learned from this experience.
+It made me excite about Backend development and go beyond my speciality of frontend systems into building, maintaining and thinking about systems holistically.
 Thanks again for the challenge.
