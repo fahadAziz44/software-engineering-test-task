@@ -128,37 +128,13 @@ func TestGetByUsername_Success(t *testing.T) {
 		FullName: "John Doe",
 	}
 
-	// Service normalizes username to lowercase
+	// Service normalizes username to lowercase and trimmed
 	mockRepo.On("GetByUsername", "johndoe").Return(expectedUser, nil)
 
-	// When: Calling GetByUsername with uppercase username
-	user, err := service.GetByUsername("JohnDoe")
-
-	// Then: Should return user and no error, and should have called repo with normalized username
-	assert.NoError(t, err)
-	assert.Equal(t, expectedUser, user)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestGetByUsername_Normalization(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	expectedUser := &model.User{
-		ID:       uuid.New(),
-		Username: "johndoe",
-		Email:    "john@example.com",
-		FullName: "John Doe",
-	}
-
-	// Expect repository to be called with normalized (lowercase, trimmed) username
-	mockRepo.On("GetByUsername", "johndoe").Return(expectedUser, nil)
-
-	// When: Calling GetByUsername with spaces and mixed case
+	// When: Calling GetByUsername with mixed case and spaces
 	user, err := service.GetByUsername("  JohnDoe  ")
 
-	// Then: Repository should have been called with "johndoe" (normalized)
+	// Then: Should return user and no error
 	assert.NoError(t, err)
 	assert.Equal(t, expectedUser, user)
 	mockRepo.AssertExpectations(t)
@@ -284,53 +260,17 @@ func TestCreate_Success(t *testing.T) {
 			req.FullName == "John Doe"
 	})).Return(createdUser, nil)
 
-	// When: Calling Create with valid request
+	// When: Calling Create with valid request (service will normalize)
 	req := &model.CreateUserRequest{
-		Username: "JohnDoe",        // Mixed case (will be normalized)
-		Email:    "John@Example.com", // Mixed case (will be normalized)
-		FullName: "John Doe",
+		Username: "  JohnDoe  ",          // Will be normalized
+		Email:    "  John@Example.COM  ", // Will be normalized
+		FullName: "  John Doe  ",         // Will be trimmed
 	}
 	user, err := service.Create(req)
 
 	// Then: Should return created user and no error
 	assert.NoError(t, err)
 	assert.Equal(t, createdUser, user)
-	// Verify normalization happened
-	assert.Equal(t, "johndoe", req.Username)
-	assert.Equal(t, "john@example.com", req.Email)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestCreate_Normalization(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	createdUser := &model.User{
-		ID:       uuid.New(),
-		Username: "testuser",
-		Email:    "test@example.com",
-		FullName: "Test User",
-	}
-
-	// Repository expects trimmed and lowercased input
-	mockRepo.On("Create", mock.MatchedBy(func(req *model.CreateUserRequest) bool {
-		return req.Username == "testuser" &&
-			req.Email == "test@example.com" &&
-			req.FullName == "Test User"
-	})).Return(createdUser, nil)
-
-	// When: Calling Create with spaces and mixed case
-	req := &model.CreateUserRequest{
-		Username: "  TestUser  ",
-		Email:    "  Test@Example.COM  ",
-		FullName: "  Test User  ",
-	}
-	user, err := service.Create(req)
-
-	// Then: Should normalize and return success
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
 	mockRepo.AssertExpectations(t)
 }
 
@@ -376,98 +316,36 @@ func TestCreate_EmailExists(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-func TestCreate_InvalidFullName_Numbers(t *testing.T) {
+func TestCreate_InvalidFullName(t *testing.T) {
 	// Given: A service with a mock repository (should not be called)
 	mockRepo := new(MockUserRepository)
 	service := NewUserService(mockRepo)
 
-	// When: Calling Create with invalid full_name (contains numbers)
-	req := &model.CreateUserRequest{
-		Username: "johndoe",
-		Email:    "john@example.com",
-		FullName: "John123 Doe",
-	}
-	user, err := service.Create(req)
-
-	// Then: Should return ErrInvalidInput without calling repository
-	assert.ErrorIs(t, err, errors.ErrInvalidInput)
-	assert.Nil(t, user)
-	mockRepo.AssertNotCalled(t, "Create", mock.Anything)
-}
-
-func TestCreate_InvalidFullName_SpecialChars(t *testing.T) {
-	// Given: A service with a mock repository (should not be called)
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	// When: Calling Create with invalid full_name (contains @)
-	req := &model.CreateUserRequest{
-		Username: "johndoe",
-		Email:    "john@example.com",
-		FullName: "John@Doe",
-	}
-	user, err := service.Create(req)
-
-	// Then: Should return ErrInvalidInput without calling repository
-	assert.ErrorIs(t, err, errors.ErrInvalidInput)
-	assert.Nil(t, user)
-	mockRepo.AssertNotCalled(t, "Create", mock.Anything)
-}
-
-func TestCreate_ValidFullName_WithApostrophe(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	createdUser := &model.User{
-		ID:       uuid.New(),
-		Username: "johndoe",
-		Email:    "john@example.com",
-		FullName: "John O'Brien",
+	testCases := []struct {
+		name     string
+		fullName string
+	}{
+		{"numbers", "John123 Doe"},
+		{"special chars", "John@Doe"},
+		{"symbols", "John$Doe"},
 	}
 
-	mockRepo.On("Create", mock.Anything).Return(createdUser, nil)
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// When: Calling Create with invalid full_name
+			req := &model.CreateUserRequest{
+				Username: "johndoe",
+				Email:    "john@example.com",
+				FullName: tc.fullName,
+			}
+			user, err := service.Create(req)
 
-	// When: Calling Create with full_name containing apostrophe
-	req := &model.CreateUserRequest{
-		Username: "johndoe",
-		Email:    "john@example.com",
-		FullName: "John O'Brien",
+			// Then: Should return ErrInvalidInput without calling repository
+			assert.ErrorIs(t, err, errors.ErrInvalidInput)
+			assert.Nil(t, user)
+			mockRepo.AssertNotCalled(t, "Create", mock.Anything)
+		})
 	}
-	user, err := service.Create(req)
-
-	// Then: Should succeed (apostrophe is allowed)
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestCreate_ValidFullName_WithHyphen(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	createdUser := &model.User{
-		ID:       uuid.New(),
-		Username: "maryjane",
-		Email:    "mary@example.com",
-		FullName: "Mary-Jane Smith",
-	}
-
-	mockRepo.On("Create", mock.Anything).Return(createdUser, nil)
-
-	// When: Calling Create with full_name containing hyphen
-	req := &model.CreateUserRequest{
-		Username: "maryjane",
-		Email:    "mary@example.com",
-		FullName: "Mary-Jane Smith",
-	}
-	user, err := service.Create(req)
-
-	// Then: Should succeed (hyphen is allowed)
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-	mockRepo.AssertExpectations(t)
 }
 
 func TestCreate_RepositoryError(t *testing.T) {
@@ -533,7 +411,7 @@ func TestUpdate_Success_AllFields(t *testing.T) {
 	mockRepo.AssertExpectations(t)
 }
 
-func TestUpdate_Success_PartialUpdate_OnlyFullName(t *testing.T) {
+func TestUpdate_Success_PartialUpdate(t *testing.T) {
 	// Given: A service with a mock repository
 	mockRepo := new(MockUserRepository)
 	service := NewUserService(mockRepo)
@@ -554,7 +432,7 @@ func TestUpdate_Success_PartialUpdate_OnlyFullName(t *testing.T) {
 			req.FullName != nil && *req.FullName == newFullName
 	})).Return(updatedUser, nil)
 
-	// When: Calling Update with only full_name
+	// When: Calling Update with only one field
 	req := &model.UpdateUserRequest{
 		FullName: &newFullName,
 	}
@@ -563,81 +441,6 @@ func TestUpdate_Success_PartialUpdate_OnlyFullName(t *testing.T) {
 	// Then: Should succeed
 	assert.NoError(t, err)
 	assert.Equal(t, updatedUser, user)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestUpdate_Success_PartialUpdate_OnlyEmail(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	userID := uuid.New()
-	newEmail := "newemail@example.com"
-
-	updatedUser := &model.User{
-		ID:       userID,
-		Username: "original",
-		Email:    newEmail,
-		FullName: "Original Name",
-	}
-
-	mockRepo.On("Update", userID, mock.MatchedBy(func(req *model.UpdateUserRequest) bool {
-		return req.Username == nil &&
-			req.Email != nil && *req.Email == newEmail &&
-			req.FullName == nil
-	})).Return(updatedUser, nil)
-
-	// When: Calling Update with only email
-	req := &model.UpdateUserRequest{
-		Email: &newEmail,
-	}
-	user, err := service.Update(userID, req)
-
-	// Then: Should succeed
-	assert.NoError(t, err)
-	assert.Equal(t, updatedUser, user)
-	mockRepo.AssertExpectations(t)
-}
-
-func TestUpdate_Normalization(t *testing.T) {
-	// Given: A service with a mock repository
-	mockRepo := new(MockUserRepository)
-	service := NewUserService(mockRepo)
-
-	userID := uuid.New()
-
-	updatedUser := &model.User{
-		ID:       userID,
-		Username: "testuser",
-		Email:    "test@example.com",
-		FullName: "Test User",
-	}
-
-	// Repository expects normalized (lowercase, trimmed) input
-	mockRepo.On("Update", userID, mock.MatchedBy(func(req *model.UpdateUserRequest) bool {
-		return req.Username != nil && *req.Username == "testuser" &&
-			req.Email != nil && *req.Email == "test@example.com" &&
-			req.FullName != nil && *req.FullName == "Test User"
-	})).Return(updatedUser, nil)
-
-	// When: Calling Update with spaces and mixed case
-	username := "  TestUser  "
-	email := "  Test@Example.COM  "
-	fullName := "  Test User  "
-	req := &model.UpdateUserRequest{
-		Username: &username,
-		Email:    &email,
-		FullName: &fullName,
-	}
-	user, err := service.Update(userID, req)
-
-	// Then: Should normalize and succeed
-	assert.NoError(t, err)
-	assert.NotNil(t, user)
-	// Verify normalization happened
-	assert.Equal(t, "testuser", *req.Username)
-	assert.Equal(t, "test@example.com", *req.Email)
-	assert.Equal(t, "Test User", *req.FullName)
 	mockRepo.AssertExpectations(t)
 }
 

@@ -5,8 +5,8 @@ import "errors"
 // Domain/Business Logic Errors
 var (
 	// User-related errors
-	ErrUserNotFound   = errors.New("user not found")
-	ErrInvalidInput   = errors.New("invalid input")
+	ErrUserNotFound = errors.New("user not found")
+	ErrInvalidInput = errors.New("invalid input")
 
 	// Uniqueness constraint errors (from repository/database layer)
 	ErrUsernameExists = errors.New("username already exists")
