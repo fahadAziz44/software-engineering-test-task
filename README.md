@@ -375,6 +375,7 @@ curl http://136.110.146.135/api/v1/users
 ```
 
  **Edit**: I have scaled down the replicas to 1 for staging and 2 for production to save costs.
+ **Edit2**: Rate limiting implemented through google cloud armor policy at the load balancer level.
 
 #### Key Features
 
