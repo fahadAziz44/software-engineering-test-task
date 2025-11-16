@@ -18,6 +18,46 @@
 
 ---
 
+
+## Key Learnings
+
+### 1. Multi-Stage Builds are Essential
+**Impact**: 98% size reduction
+- Never ship the build environment with your app
+- Only copy final artifacts to runtime image
+
+### 2. Choose the Right Base Image
+**Comparison**:
+```
+scratch (0 MB)        - Too minimal (no CA certs, timezone data)
+distroless (2 MB)     - Perfect balance 
+alpine (5 MB)         - Good but has shell/package manager
+golang:1.25 (1.8 GB)  - Way too large for runtime
+```
+
+### 3. Static Binaries Enable Minimal Images
+```bash
+CGO_ENABLED=0 
+```
+- Go's feature: True static binaries
+- Enables use of minimal base images
+- No runtime dependencies
+
+### 4. Strip Debug Info in Production
+```bash
+-ldflags="-w -s"  # size reduction
+```
+- Never ship debug symbols to production
+- Use separate debug builds if needed
+
+### 5. Security
+- Non-root user by default
+- No shell or package manager
+- Minimal attack surface
+---
+**Built with**: Multi-stage builds, Distroless, CGO_ENABLED=0,
+---
+
 ## 📦 Size Breakdown (Optimized Image)
 
 From `docker history cruder:latest`:
@@ -34,6 +74,7 @@ Migrations             12.3 KB     0.03%
 TOTAL                  36.4 MB     100%
 ```
 
+---
 
 ## Verification Commands
 
@@ -82,44 +123,3 @@ curl http://localhost:8080/api/v1/users
 ```
 
 ---
-
-
-## Key Learnings
-
-### 1. Multi-Stage Builds are Essential
-**Impact**: 98% size reduction
-- Never ship the build environment with your app
-- Only copy final artifacts to runtime image
-
-### 2. Choose the Right Base Image
-**Comparison**:
-```
-scratch (0 MB)        - Too minimal (no CA certs, timezone data)
-distroless (2 MB)     - Perfect balance 
-alpine (5 MB)         - Good but has shell/package manager
-golang:1.25 (1.8 GB)  - Way too large for runtime
-```
-
-### 3. Static Binaries Enable Minimal Images
-```bash
-CGO_ENABLED=0 
-```
-- Go's feature: True static binaries
-- Enables use of minimal base images
-- No runtime dependencies
-
-### 4. Strip Debug Info in Production
-```bash
--ldflags="-w -s"  # size reduction
-```
-- Never ship debug symbols to production
-- Use separate debug builds if needed
-
-### 5. Security is Not Optional
-- Non-root user by default
-- No shell or package manager
-- Minimal attack surface
-
----
-
-**Built with**: Multi-stage builds, Distroless, CGO_ENABLED=0, and production best practices
