@@ -89,7 +89,6 @@ curl -X POST http://localhost:8080/api/v1/users \
 - Proper HTTP status codes
 - Structured error responses
 - **X-API-Key authentication** - Optional header-based authentication (401/403 responses)
-- **97.5% test coverage** - Comprehensive unit tests
 - **JSON structured logging** - Request tracing with unique IDs, latency tracking, automatic log levels
 - **Dockerized application** - Production-ready container (36MB)
 - **Docker Compose setup** - One-command development environment
@@ -160,7 +159,6 @@ services:
 1. **Distroless over Alpine** for runtime: Smaller attack surface, built-in CA certs
 2. **Static binary compilation**: No runtime dependencies, portable
 3. **Build cache optimization**: Dependencies cached separately from source code
-4. **.dockerignore**: Reduces build context from ~250MB to ~2MB
 
 - [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
 
