@@ -24,9 +24,7 @@ FROM gcr.io/distroless/static-debian12
 
 # Copy timezone data from builder (for accurate timestamps in logs)
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-# Copy CA certificates from builder (for PostgreSQL TLS connections)
-# Only copies the certificate file, not the entire package
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
 
 COPY --from=builder /build/cruder /cruder
 

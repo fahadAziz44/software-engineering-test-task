@@ -1,125 +1,113 @@
-# Docker Build Results & Optimization Summary
+# Docker Image Optimization
 
-**Date**: 2025-10-30
-**Project**: CRUDER User Management API
-
----
-
-## 🎯 Final Results
-
-### Image Size Comparison
-
-| Approach | Base Image | Final Size | Reduction |
-|----------|-----------|-----------|-----------|
-| **Naive** (single-stage, golang base) | `golang:1.25` | **1.87 GB** | Baseline |
-| **Optimized** (multi-stage, distroless) | `gcr.io/distroless/static-debian12` | **36.4 MB** | **98% smaller!** |
-
-**Savings**: 1.83 GB (from 1.87 GB to 36.4 MB)
+**Assignment Requirement**: *"Write simple dockerfile for the application. Make the docker container to be as minimal as possible (in size)."*
 
 ---
 
+## Results
 
-## Key Learnings
+| Approach | Base Image | Size | Reduction |
+|----------|-----------|------|-----------|
+| Naive (single-stage) | `golang:1.25` | 1.87 GB | Baseline |
+| **Optimized (multi-stage)** | `gcr.io/distroless/static-debian12` | **36.1 MB** | **98% smaller** |
 
-### 1. Multi-Stage Builds are Essential
-**Impact**: 98% size reduction
-- Never ship the build environment with your app
-- Only copy final artifacts to runtime image
+**Savings**: 1.83 GB reduction
 
-### 2. Choose the Right Base Image
-**Comparison**:
-```
-scratch (0 MB)        - Too minimal (no CA certs, timezone data)
-distroless (2 MB)     - Perfect balance 
-alpine (5 MB)         - Good but has shell/package manager
-golang:1.25 (1.8 GB)  - Way too large for runtime
-```
-
-### 3. Static Binaries Enable Minimal Images
-```bash
-CGO_ENABLED=0 
-```
-- Go's feature: True static binaries
-- Enables use of minimal base images
-- No runtime dependencies
-
-### 4. Strip Debug Info in Production
-```bash
--ldflags="-w -s"  # size reduction
-```
-- Never ship debug symbols to production
-- Use separate debug builds if needed
-
-### 5. Security
-- Non-root user by default
-- No shell or package manager
-- Minimal attack surface
----
-**Built with**: Multi-stage builds, Distroless, CGO_ENABLED=0,
 ---
 
-## 📦 Size Breakdown (Optimized Image)
+## Implementation
 
-From `docker history cruder:latest`:
+### Multi-Stage Build
+
+**Stage 1 - Builder** (golang:1.25-alpine):
+- Compiles Go binary with optimization flags
+- Strips debug symbols (`-ldflags="-w -s"`)
+- Creates static binary (`CGO_ENABLED=0`)
+
+**Stage 2 - Runtime** (distroless):
+- Copies only the compiled binary
+- Includes timezone data (accurate logging)
+- Runs as non-root user (security)
+
+### Key Optimizations
+
+1. **Multi-stage build**: Separates build tools from runtime
+2. **Static binary**: No runtime dependencies (`CGO_ENABLED=0`)
+3. **Stripped symbols**: Remove debug info (`-ldflags="-w -s"`)
+4. **Distroless base**: Minimal attack surface (no shell, no package manager)
+5. **Non-root user**: Security best practice
+
+---
+
+## Size Breakdown
 
 ```
-Component              Size        Percentage
+Component              Size        % of Total
 ────────────────────────────────────────────
 Go Binary (stripped)   20.5 MB     56.3%
 Distroless Base        ~14 MB      38.5%
 Timezone Data          1.55 MB     4.3%
-CA Certificates        238 KB      0.6%
-Migrations             12.3 KB     0.03%
+Migration Files        12.3 KB     0.03%
 ────────────────────────────────────────────
-TOTAL                  36.4 MB     100%
+TOTAL                  36.1 MB     100%
 ```
 
 ---
 
-## Verification Commands
+## Security Benefits
 
-### Check Image Size
+- No shell or debugging tools (reduced attack surface)
+- Non-root user by default
+- Minimal dependencies (only what's needed)
+- Distroless provides only essential runtime files
+
+---
+
+## Verification
+
 ```bash
-docker images cruder
-# Output: cruder latest ... 36.4MB
+# Check image size
+docker images ghcr.io/fahadaziz44/cruder:latest
+
+# Inspect layers
+docker history ghcr.io/fahadaziz44/cruder:latest --human
+
+# Test the image
+docker run -e POSTGRES_USER=user -e POSTGRES_PASSWORD=pass \
+  -e POSTGRES_HOST=localhost -e POSTGRES_PORT=5432 \
+  -e POSTGRES_DB=db ghcr.io/fahadaziz44/cruder:latest
 ```
 
-### Check Layer Breakdown
-```bash
-docker history cruder:latest --human
-```
+---
 
-### Build and Test
-```bash
-# Build the image
-docker-compose up --build -d
+## Key Learnings
 
-# Check if running
-docker ps
+1. Multi-stage builds are essential - Never ship build tools to production
+2. Base image choice matters - Distroless provides optimal size/security balance
+3. Static binaries enable minimal images - Go's `CGO_ENABLED=0` is powerful
+4. Security and size often align - Fewer components = smaller image + smaller attack surface
 
-# Test API
-curl http://localhost:8080/api/v1/users
+---
 
-# View logs
-docker-compose logs -f app
+## Base Image Selection
 
-# Stop
-docker-compose down
-```
+Evaluated multiple options for runtime base image:
 
-### Local Development (Fast Iteration)
-```bash
-# Start just database
-make db
+| Base Image | Size | Has CA Certs? | Pros | Cons |
+|-----------|------|---------------|------|------|
+| `golang:1.25` | ~1.8 GB | Yes | Everything included | Way too large for runtime |
+| `alpine:latest` | ~5 MB | Yes | Small, popular | Has shell/package manager (attack surface) |
+| `distroless/static` | ~2 MB | Yes | Minimal, no shell, includes essentials | Harder to debug |
+| `scratch` | 0 MB | No | Ultimate minimal | No CA certs → PostgreSQL TLS fails |
 
-# Run migrations
-make migrate-up
+**Decision: Distroless**
 
-# Run application locally
-make run
+Chose `gcr.io/distroless/static-debian12` because:
+- Includes CA certificates (for PostgreSQL TLS connections)
+- Includes timezone data (accurate logging timestamps)
+- No shell or package managers (minimal attack surface)
+- Optimal size/security balance
 
-# Test API
-curl http://localhost:8080/api/v1/users
-```
+**Why not scratch?** The application can connect to PostgreSQL with `sslmode=require`, which requires CA certificates to verify the server's TLS certificate. Scratch has no files, causing `certificate signed by unknown authority` errors.
 
 ---
