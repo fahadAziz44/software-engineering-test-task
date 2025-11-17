@@ -428,7 +428,8 @@ For detailed deployment instructions and manifest files, see [Kubernetes Deploym
 
 - **Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL
 - **Monitoring setup** - Prometheus/Grafana or Google Cloud Monitoring with alerts
-- **Automated Database Migrations** - Run migrations as part of deployment pipeline
+- **Automated Database Migrations** - How to manage database changes reliably and safely in a Continuous Delivery (CD) workflow?
+- **Observability** - Tools to monitor and observe the application in production. (metrics, traces, logs)
 - **API documentation** - Swagger/OpenAPI for self-documenting API
 - **JWT authentication** - Per-user authentication (currently using API key)
 - **Pagination** - Handle large user lists efficiently
