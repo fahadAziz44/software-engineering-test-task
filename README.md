@@ -354,7 +354,7 @@ Comprehensive documentation is available in the `docs/` directory:
 
 ---
 
-## 🧪 **Testing**
+## **Testing**
 
 ```bash
 # Run all unit tests
@@ -382,6 +382,17 @@ func TestGetByID_Success(t *testing.T) {
     assert.Equal(t, "johndoe", user.Username)
 }
 ```
+
+### Run API Tests
+```bash
+# Test local deployment
+./test-api.sh http://localhost:8080
+
+# Test production deployment (replace with your IP)
+./test-api.sh http://<PRODUCTION_IP>
+
+# Keep test data for debugging
+./test-api.sh --no-cleanup
 
 ---
 
