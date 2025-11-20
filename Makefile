@@ -1,4 +1,5 @@
 include .env
+export
 
 DB_DRIVER=postgres
 DB_STRING="host=${POSTGRES_HOST} port=${POSTGRES_PORT} user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable"
@@ -16,10 +17,10 @@ migrate-reset:
 	goose -dir ./migrations $(DB_DRIVER) $(DB_STRING) reset
 
 lint:
-	golangci-lint run ./...
+	$(shell go env GOPATH)/bin/golangci-lint run ./...
 
 security:
-	gosec -exclude-dir=bin/database ./...
+	$(shell go env GOPATH)/bin/gosec -exclude-dir=bin/database ./...
 
 test:
 	go test -cover -coverprofile=./test.out ./...
