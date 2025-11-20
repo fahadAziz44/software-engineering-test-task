@@ -29,12 +29,18 @@ test.out
 # OS files
 .DS_Store
 Thumbs.db
+claude.md
 
-# archived documents
+# Documentation (personal notes, analysis, context files, learnings - not part of main codebase)
 docs/archive/*
-docs/Learnings/
+docs/learnings/
+docs/analysis/
 
+logs/
+local/
+local_scripts/
 
+# Kubernetes secrets
 kubernetes/*/secret.yaml
 kubernetes/*/secrets/
 *.secret.yaml
