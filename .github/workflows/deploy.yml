@@ -1,24 +1,17 @@
 name: CD - Deploy to GKE
 
-# 🎯 PORTFOLIO SHOWCASE MODE
-# This workflow demonstrates production-ready CI/CD practices:
-#
-# ✅ RUNS SUCCESSFULLY:
-#   - Docker image build and push to GHCR
-#   - Staging deployment workflow (showcase mode)
-#   - Production deployment workflow (showcase mode with manual approval)
-#
-# 🔧 TO ENABLE ACTUAL GKE DEPLOYMENTS:
+# ⚠️ PORTFOLIO SHOWCASE MODE ⚠️
+# This workflow demonstrates production-ready CI/CD practices but deployments are disabled.
+# To enable deployments:
 #   1. Add GKE_SA_KEY secret to GitHub repository settings
 #   2. Update GKE_CLUSTER and GKE_REGION with your cluster details
-#   3. Uncomment the actual deployment code and replace showcase jobs
+#   3. Remove the `if: false` conditions from deploy-staging and deploy-production jobs
 #
-# 📚 DEMONSTRATES:
-#   - Progressive deployment strategy (staging → production)
-#   - Manual approval gates for production (GitHub Environments)
-#   - Zero-downtime rolling updates with health probes
-#   - Automated smoke tests and verification
-#   - Immutable deployments with SHA-tagged Docker images
+# The deployment code remains visible to showcase:
+#   - Progressive deployment (staging → production)
+#   - Manual approval gates for production
+#   - Zero-downtime rolling updates
+#   - Automated smoke tests and health checks
 
 on:
   push:
@@ -97,45 +90,15 @@ jobs:
           echo "✅ Built and pushed image:"
           echo "${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:${{ steps.vars.outputs.short_sha }}"
 
-  # Job 2: Deploy to Staging (Portfolio Showcase Mode)
-  # This job runs successfully to demonstrate deployment workflow structure
-  # without requiring actual GKE infrastructure
-  deploy-staging:
-    name: Deploy to Staging (Showcase)
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: staging
-      url: https://github.com/${{ github.repository }}
-
-    steps:
-      - name: Portfolio Showcase Mode
-        run: |
-          echo "📋 PORTFOLIO SHOWCASE MODE"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-          echo "This workflow demonstrates production-ready deployment practices:"
-          echo ""
-          echo "✅ Progressive deployment (staging → production)"
-          echo "✅ Environment isolation with approval gates"
-          echo "✅ Zero-downtime rolling updates"
-          echo "✅ Automated health checks and smoke tests"
-          echo "✅ GKE Autopilot deployment strategy"
-          echo ""
-          echo "To enable actual deployments:"
-          echo "  1. Add GKE_SA_KEY secret to repository settings"
-          echo "  2. Update GKE_CLUSTER and GKE_REGION variables"
-          echo "  3. Replace this job with the commented deployment code below"
-          echo ""
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "✅ Staging deployment workflow validated"
-
-  # # ACTUAL DEPLOYMENT CODE (commented for portfolio showcase)
-  # # Uncomment and replace the job above to enable real deployments
+  # # Job 2: Deploy to Staging (automatic)
+  # # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # # This job demonstrates staging deployment practices but is disabled to prevent actual deployments.
+  # # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
   # deploy-staging:
   #   name: Deploy to Staging
   #   runs-on: ubuntu-latest
   #   needs: build
+  #   if: false  # Disabled for portfolio showcase - remove this line to enable deployments
   #   environment:
   #     name: staging
   #     url: http://<STAGING_IP>  # Replace with your staging Load Balancer IP
@@ -214,45 +177,15 @@ jobs:
   #         echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
   #         echo "::notice::URL: http://<STAGING_IP>"  # Replace with your staging Load Balancer IP
 
-  # Job 3: Deploy to Production (Portfolio Showcase Mode)
-  # This job requires manual approval and demonstrates production safeguards
-  deploy-production:
-    name: Deploy to Production (Showcase)
-    runs-on: ubuntu-latest
-    needs: [build, deploy-staging]
-    environment:
-      name: production
-      url: https://github.com/${{ github.repository }}
-
-    steps:
-      - name: Portfolio Showcase Mode
-        run: |
-          echo "🚀 PRODUCTION DEPLOYMENT - PORTFOLIO SHOWCASE"
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo ""
-          echo "This job demonstrates production-grade safeguards:"
-          echo ""
-          echo "✅ Manual approval gate (GitHub Environment protection)"
-          echo "✅ Dependency on successful staging deployment"
-          echo "✅ Zero-downtime rolling update strategy"
-          echo "✅ Automated smoke tests before serving traffic"
-          echo "✅ Instant rollback capability on failure"
-          echo ""
-          echo "Production deployment would include:"
-          echo "  • kubectl set image with new container"
-          echo "  • Health probe verification (liveness + readiness)"
-          echo "  • Automated smoke tests (health + ready endpoints)"
-          echo "  • Rollout status monitoring with 600s timeout"
-          echo ""
-          echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-          echo "✅ Production deployment workflow validated"
-
-  # # ACTUAL DEPLOYMENT CODE (commented for portfolio showcase)
-  # # Uncomment and replace the job above to enable real deployments
+  # # Job 3: Deploy to Production (manual approval required)
+  # # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # # This job demonstrates production deployment with manual approval gates but is disabled.
+  # # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
   # deploy-production:
   #   name: Deploy to Production
   #   runs-on: ubuntu-latest
   #   needs: [build, deploy-staging]
+  #   if: false  # Disabled for portfolio showcase - remove this line to enable deployments
   #   environment:
   #     name: production
   #     url: http://<PRODUCTION_IP>  # Replace with your production Load Balancer IP
