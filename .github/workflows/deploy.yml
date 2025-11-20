@@ -90,183 +90,183 @@ jobs:
           echo "✅ Built and pushed image:"
           echo "${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:${{ steps.vars.outputs.short_sha }}"
 
-  # Job 2: Deploy to Staging (automatic)
-  # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
-  # This job demonstrates staging deployment practices but is disabled to prevent actual deployments.
-  # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
-  deploy-staging:
-    name: Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: build
-    if: false  # Disabled for portfolio showcase - remove this line to enable deployments
-    environment:
-      name: staging
-      url: http://<STAGING_IP>  # Replace with your staging Load Balancer IP
+  # # Job 2: Deploy to Staging (automatic)
+  # # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # # This job demonstrates staging deployment practices but is disabled to prevent actual deployments.
+  # # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
+  # deploy-staging:
+  #   name: Deploy to Staging
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   if: false  # Disabled for portfolio showcase - remove this line to enable deployments
+  #   environment:
+  #     name: staging
+  #     url: http://<STAGING_IP>  # Replace with your staging Load Balancer IP
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+  #     - name: Authenticate to Google Cloud
+  #       uses: google-github-actions/auth@v2
+  #       with:
+  #         credentials_json: ${{ secrets.GKE_SA_KEY }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+  #     - name: Set up Cloud SDK
+  #       uses: google-github-actions/setup-gcloud@v2
 
-      - name: Install gke-gcloud-auth-plugin
-        run: |
-          gcloud components install gke-gcloud-auth-plugin
+  #     - name: Install gke-gcloud-auth-plugin
+  #       run: |
+  #         gcloud components install gke-gcloud-auth-plugin
 
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
-            --region=${{ env.GKE_REGION }}
+  #     - name: Get GKE credentials
+  #       run: |
+  #         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+  #           --region=${{ env.GKE_REGION }}
 
-      - name: Update deployment image
-        run: |
-          kubectl set image deployment/cruder-app \
-            cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
-            -n staging
+  #     - name: Update deployment image
+  #       run: |
+  #         kubectl set image deployment/cruder-app \
+  #           cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
+  #           -n staging
 
-      - name: Wait for rollout to complete
-        run: |
-          kubectl rollout status deployment/cruder-app -n staging --timeout=300s
+  #     - name: Wait for rollout to complete
+  #       run: |
+  #         kubectl rollout status deployment/cruder-app -n staging --timeout=300s
 
-      - name: Verify deployment
-        run: |
-          echo "Checking deployment status..."
+  #     - name: Verify deployment
+  #       run: |
+  #         echo "Checking deployment status..."
 
-          # Get pod status (for visibility, but don't fail on transient states)
-          kubectl get pods -n staging -l app=cruder
+  #         # Get pod status (for visibility, but don't fail on transient states)
+  #         kubectl get pods -n staging -l app=cruder
 
-          # Verify all replicas are ready using deployment-level status (not pod-level)
-          # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
-          # and new pods, causing "pod not found" errors. Deployment status only counts pods
-          # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
-          READY_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.status.readyReplicas}')
-          DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.spec.replicas}')
+  #         # Verify all replicas are ready using deployment-level status (not pod-level)
+  #         # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
+  #         # and new pods, causing "pod not found" errors. Deployment status only counts pods
+  #         # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
+  #         READY_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.status.readyReplicas}')
+  #         DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n staging -o jsonpath='{.spec.replicas}')
 
-          echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
+  #         echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
 
-          if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
-            echo "✅ All replicas are ready"
-          else
-            echo "❌ Not all replicas are ready"
-            exit 1
-          fi
+  #         if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
+  #           echo "✅ All replicas are ready"
+  #         else
+  #           echo "❌ Not all replicas are ready"
+  #           exit 1
+  #         fi
 
-      - name: Run smoke tests
-        run: |
-          echo "Running smoke tests against staging..."
+  #     - name: Run smoke tests
+  #       run: |
+  #         echo "Running smoke tests against staging..."
 
-          # Test health endpoint
-          kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
-            curl -f http://cruder-service.staging.svc.cluster.local/health || exit 1
+  #         # Test health endpoint
+  #         kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
+  #           curl -f http://cruder-service.staging.svc.cluster.local/health || exit 1
 
-          # Test ready endpoint
-          kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
-            curl -f http://cruder-service.staging.svc.cluster.local/ready || exit 1
+  #         # Test ready endpoint
+  #         kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
+  #           curl -f http://cruder-service.staging.svc.cluster.local/ready || exit 1
 
-          echo "✅ Smoke tests passed"
+  #         echo "✅ Smoke tests passed"
 
-      - name: Deployment summary
-        run: |
-          echo "::notice::✅ Successfully deployed to staging"
-          echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
-          echo "::notice::URL: http://<STAGING_IP>"  # Replace with your staging Load Balancer IP
+  #     - name: Deployment summary
+  #       run: |
+  #         echo "::notice::✅ Successfully deployed to staging"
+  #         echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
+  #         echo "::notice::URL: http://<STAGING_IP>"  # Replace with your staging Load Balancer IP
 
-  # Job 3: Deploy to Production (manual approval required)
-  # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
-  # This job demonstrates production deployment with manual approval gates but is disabled.
-  # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
-  deploy-production:
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [build, deploy-staging]
-    if: false  # Disabled for portfolio showcase - remove this line to enable deployments
-    environment:
-      name: production
-      url: http://<PRODUCTION_IP>  # Replace with your production Load Balancer IP
+  # # Job 3: Deploy to Production (manual approval required)
+  # # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # # This job demonstrates production deployment with manual approval gates but is disabled.
+  # # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
+  # deploy-production:
+  #   name: Deploy to Production
+  #   runs-on: ubuntu-latest
+  #   needs: [build, deploy-staging]
+  #   if: false  # Disabled for portfolio showcase - remove this line to enable deployments
+  #   environment:
+  #     name: production
+  #     url: http://<PRODUCTION_IP>  # Replace with your production Load Balancer IP
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          credentials_json: ${{ secrets.GKE_SA_KEY }}
+  #     - name: Authenticate to Google Cloud
+  #       uses: google-github-actions/auth@v2
+  #       with:
+  #         credentials_json: ${{ secrets.GKE_SA_KEY }}
 
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+  #     - name: Set up Cloud SDK
+  #       uses: google-github-actions/setup-gcloud@v2
 
-      - name: Install gke-gcloud-auth-plugin
-        run: |
-          gcloud components install gke-gcloud-auth-plugin
+  #     - name: Install gke-gcloud-auth-plugin
+  #       run: |
+  #         gcloud components install gke-gcloud-auth-plugin
 
-      - name: Get GKE credentials
-        run: |
-          gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
-            --region=${{ env.GKE_REGION }}
+  #     - name: Get GKE credentials
+  #       run: |
+  #         gcloud container clusters get-credentials ${{ env.GKE_CLUSTER }} \
+  #           --region=${{ env.GKE_REGION }}
 
-      - name: Update deployment image
-        run: |
-          kubectl set image deployment/cruder-app \
-            cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
-            -n production
+  #     - name: Update deployment image
+  #       run: |
+  #         kubectl set image deployment/cruder-app \
+  #           cruder-app=${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }} \
+  #           -n production
 
-      - name: Wait for rollout to complete
-        run: |
-          kubectl rollout status deployment/cruder-app -n production --timeout=600s
+  #     - name: Wait for rollout to complete
+  #       run: |
+  #         kubectl rollout status deployment/cruder-app -n production --timeout=600s
 
-      - name: Verify deployment
-        run: |
-          echo "Checking deployment status..."
+  #     - name: Verify deployment
+  #       run: |
+  #         echo "Checking deployment status..."
 
-          # Get pod status (for visibility, but don't fail on transient states)
-          kubectl get pods -n production -l app=cruder
+  #         # Get pod status (for visibility, but don't fail on transient states)
+  #         kubectl get pods -n production -l app=cruder
 
-          # Verify all replicas are ready using deployment-level status (not pod-level)
-          # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
-          # and new pods, causing "pod not found" errors. Deployment status only counts pods
-          # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
-          READY_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.status.readyReplicas}')
-          DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.spec.replicas}')
+  #         # Verify all replicas are ready using deployment-level status (not pod-level)
+  #         # Why: During rolling updates, kubectl wait with pod labels matches both old (terminating)
+  #         # and new pods, causing "pod not found" errors. Deployment status only counts pods
+  #         # from the current ReplicaSet, avoiding race conditions. See docs/incidents/2025-01-27-deployment-verification-fix.md
+  #         READY_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.status.readyReplicas}')
+  #         DESIRED_REPLICAS=$(kubectl get deployment cruder-app -n production -o jsonpath='{.spec.replicas}')
 
-          echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
+  #         echo "Ready replicas: $READY_REPLICAS/$DESIRED_REPLICAS"
 
-          if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
-            echo "✅ All replicas are ready"
-          else
-            echo "❌ Not all replicas are ready"
-            exit 1
-          fi
+  #         if [ "$READY_REPLICAS" -eq "$DESIRED_REPLICAS" ]; then
+  #           echo "✅ All replicas are ready"
+  #         else
+  #           echo "❌ Not all replicas are ready"
+  #           exit 1
+  #         fi
 
-      - name: Run smoke tests
-        run: |
-          echo "Running smoke tests against production..."
+  #     - name: Run smoke tests
+  #       run: |
+  #         echo "Running smoke tests against production..."
 
-          # Test health endpoint
-          kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
-            curl -f http://cruder-service.production.svc.cluster.local/health || exit 1
+  #         # Test health endpoint
+  #         kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
+  #           curl -f http://cruder-service.production.svc.cluster.local/health || exit 1
 
-          # Test ready endpoint
-          kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
-            curl -f http://cruder-service.production.svc.cluster.local/ready || exit 1
+  #         # Test ready endpoint
+  #         kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
+  #           curl -f http://cruder-service.production.svc.cluster.local/ready || exit 1
 
-          echo "✅ Smoke tests passed"
+  #         echo "✅ Smoke tests passed"
 
-      - name: Deployment summary
-        run: |
-          echo "::notice::🚀 Successfully deployed to PRODUCTION"
-          echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
-          echo "::notice::URL: http://<PRODUCTION_IP>"  # Replace with your production Load Balancer IP
+  #     - name: Deployment summary
+  #       run: |
+  #         echo "::notice::🚀 Successfully deployed to PRODUCTION"
+  #         echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
+  #         echo "::notice::URL: http://<PRODUCTION_IP>"  # Replace with your production Load Balancer IP
 
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "::error::❌ Production deployment failed!"
-          echo "::error::Consider rolling back with: kubectl rollout undo deployment/cruder-app -n production"
+  #     - name: Notify on failure
+  #       if: failure()
+  #       run: |
+  #         echo "::error::❌ Production deployment failed!"
+  #         echo "::error::Consider rolling back with: kubectl rollout undo deployment/cruder-app -n production"
  
