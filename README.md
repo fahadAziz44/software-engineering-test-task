@@ -1,448 +1,527 @@
-# CRUDER - User Management API
+# Production-Ready Go Microservice Template
 
-A CRUD API for user management built with Go, Gin framework, and PostgreSQL. Except for terraform, all the other features are implemented mentioned in the [TASK.md](./TASK.md) file.
+**A production-grade microservice architecture demonstrating zero-downtime Kubernetes deployments, automated CI/CD pipelines, and cloud-native best practices.**
 
-**Quick look:**
-- **36MB Docker image** - 98% size reduction from naive build (1.87GB → 36MB)
-- **Live deployment** - Production: http://136.110.146.135 | Staging: http://34.49.250.233
-- **CI/CD pipeline** - Automated quality gates (lint, security, tests) + deployment
-- **Structured logging** - JSON logs with request tracing and automatic log levels
-
-The original task requirements can be found in [TASK.md](./TASK.md)
-
-
-## Reviewer's Guide: Engineering Decisions
-
-- int vs. uuid: The task mentioned :uuid for endpoints, but the initial code used int IDs. To fix this at the foundation, the database migration was corrected to use UUIDs as primary keys for security and scalability.
-
-- Service Layer Tests: The task's example showed an integration test, but the request was for service-layer tests. internal/service/users_test.go implements these as true unit tests, mocking the repository to test business logic (like validation and normalization) in isolation.
-
-- Docker ("Minimal as possible"): This was a key focus. The final image is 36.4MB (a 98% reduction from a 1.8GB naive build). This was achieved with a distroless base, which also runs as a nonroot user for security. See the full analysis in [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md).
-
-- Configuration: All hardcoded credentials were removed. The app now follows environment-based configuration (no config files). All settings (database host, port, credentials, server port) come from environment variables, making it cloud ready for any platform.
-
-- JSON Logging: A structured log/slog JSON logging middleware was implemented (internal/middleware/logger.go). It injects a request_id for traceability and automatically logs request/response metadata. See [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) for details.
-
-- Informative Repository: The DELETE and UPDATE functions in the repository report facts (e.g., return ErrUserNotFound if no row was affected).
-
-- Controller-as-Policy: The DeleteUser controller catches this ErrUserNotFound and makes a policy decision to return 204 No Content, preserving HTTP idempotency while still having the information to log the event.
-
-- CI/CD Pipeline: The CI pipeline in .github/workflows/ci.yml runs lint, security scans, tests, and builds in parallel for fast, reliable feedback.
+[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-GKE%20Autopilot-326CE5?style=flat&logo=kubernetes)](https://kubernetes.io/)
+[![Docker Image Size](https://img.shields.io/badge/Docker-36MB-2496ED?style=flat&logo=docker)](https://github.com/fahadAziz44/zero-downtime-go-api/pkgs/container/cruder)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
-## Getting Started
 
-The application requires PostgreSQL. Run it locally with Docker Compose:
+## 🎯 **What This Demonstrates**
+
+This project showcases **production-ready microservice engineering** designed for deployment on Google Kubernetes Engine:
+
+- ✅ **Zero-Downtime Deployments** - Rolling updates with health probes and graceful shutdown
+- ✅ **Multi-Environment Architecture** - Isolated staging and production namespaces
+- ✅ **Automated CI/CD Pipeline** - Quality gates, security scanning, progressive deployment
+- ✅ **Cloud-Native Design** - GKE Autopilot-ready with managed PostgreSQL support
+- ✅ **Observability** - Structured JSON logging with request tracing
+- ✅ **Docker Optimization** - 98% size reduction (1.87GB → 36MB)
+
+**Deployment Architecture:**
+- 🌐 Production: `http://<PRODUCTION_IP>` ([Health Check](http://<PRODUCTION_IP>/health))
+- 🔧 Staging: `http://<STAGING_IP>` ([Health Check](http://<STAGING_IP>/health))
+
+**Note:** This is a portfolio showcase project. Replace `<PRODUCTION_IP>` and `<STAGING_IP>` with your actual GKE Load Balancer IPs when deployed.
+
+---
+
+## 🏗️ **Architecture Overview**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  GitHub Actions CI/CD                       │
+│                                                             |
+│  Lint -> Formatting → Security Scan → Tests → Build → Deploy│
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+                  ↓
+┌─────────────────────────────────────────────────────────┐
+│              Google Kubernetes Engine (GKE)             │
+│                                                         │
+│  ┌──────────────────┐      ┌──────────────────┐        │
+│  │ Staging Namespace│      │Production Namespace│       │
+│  │                  │      │                  │        │
+│  │  Load Balancer   │      │  Load Balancer   │        │
+│  │  <STAGING_IP>    │      │  <PRODUCTION_IP> │        │
+│  │       ↓          │      │       ↓          │        │
+│  │  Service (LB)    │      │  Service (LB)    │        │
+│  │       ↓          │      │       ↓          │        │
+│  │  Deployment      │      │  Deployment      │        │
+│  │  • 2 Replicas    │      │  • 3 Replicas    │        │
+│  │  • Health Probes │      │  • Health Probes │        │
+│  │  • Auto Rollback │      │  • Zero Downtime │        │
+│  └────────┬─────────┘      └────────┬─────────┘        │
+│           │                         │                  │
+└───────────┼─────────────────────────┼──────────────────┘
+            │                         │
+            ↓                         ↓
+    ┌───────────────┐         ┌───────────────┐
+    │  Neon Staging │         │  Neon Production│
+    │  PostgreSQL   │         │  PostgreSQL   │
+    │  (SSL/TLS)    │         │  (SSL/TLS)    │
+    └───────────────┘         └───────────────┘
+```
+
+---
+
+## 🚀 **Key Features**
+
+### **Zero-Downtime Deployments**
+- **Rolling updates** with `maxUnavailable: 0` in production
+- **Health probes** prevent traffic to unhealthy pods (liveness + readiness)
+- **Graceful shutdown** with configurable preStop hooks
+- **Automated smoke tests** validate deployments before traffic routing
+- **Instant rollback** on deployment failure
+
+### **Production-Grade CI/CD**
+- **Parallel quality gates**: Linting, security scanning (gosec), unit tests
+- **Progressive deployment**: Staging (automatic) → Production (manual approval)
+- **Immutable deployments**: SHA-tagged Docker images for traceability
+- **Environment isolation**: Separate namespaces, configs, and databases
+- **Automated rollback**: Failed deployments revert automatically
+
+### **Cloud-Native Architecture**
+- **GKE Autopilot**: Fully managed Kubernetes with auto-scaling
+- **Managed Database**: Neon PostgreSQL with SSL/TLS encryption
+- **Secret Management**: Kubernetes secrets (not hardcoded credentials)
+- **Resource Optimization**: CPU/memory limits prevent resource exhaustion
+- **Security Hardening**: Non-root containers, minimal attack surface
+
+### **Observability & Monitoring**
+- **Structured JSON logging** with automatic log levels (INFO/WARN/ERROR)
+- **Request tracing** via unique `X-Request-ID` headers
+- **Health endpoints**: `/health` (liveness) and `/ready` (readiness)
+- **Prometheus-ready**: Annotations for metrics scraping
+- **Latency tracking**: Automatic request duration logging
+
+### **Docker Optimization**
+- **36MB final image** (98% reduction from naive 1.87GB build)
+- **Multi-stage distroless build** for minimal attack surface
+- **Static binary compilation** (no runtime dependencies)
+- **Security**: Runs as non-root user (uid 65532)
+- **Build caching**: Optimized layer structure for fast rebuilds
+
+---
+
+## 📦 **Tech Stack**
+
+| Component | Technology | Purpose |
+|-----------|-----------|---------|
+| **Language** | Go 1.25 | High-performance backend |
+| **Web Framework** | Gin | HTTP routing and middleware |
+| **Database** | PostgreSQL (Neon) | Managed, serverless SQL database |
+| **Container** | Docker (Distroless) | Minimal, secure runtime |
+| **Orchestration** | Kubernetes (GKE Autopilot) | Zero-downtime deployments |
+| **CI/CD** | GitHub Actions | Automated testing and deployment |
+| **Logging** | log/slog | Structured JSON logging |
+| **Registry** | GitHub Container Registry (GHCR) | Docker image storage |
+
+---
+
+## 🏁 **Quick Start**
+
+### **Local Development**
 
 ```bash
-# Start database and application
+# Clone the repository
+git clone https://github.com/fahadAziz44/zero-downtime-go-api.git
+cd zero-downtime-go-api
+
+# Start database and application with Docker Compose
 docker-compose up --build
 
-# In another terminal, run database migrations
+# Run database migrations (in another terminal)
 make migrate-up
+
+# The API will be available at http://localhost:8080
 ```
 
-The API will be available at `http://localhost:8080/api/v1`
+### **Test the Live Deployment**
 
-**For local development** (database in Docker, app runs locally):
 ```bash
+# Replace <PRODUCTION_IP> with your actual GKE Load Balancer IP
+
+# Production health check
+curl http://<PRODUCTION_IP>/health
+
+# List all users
+curl http://<PRODUCTION_IP>/api/v1/users
+
+# Create a user
+curl -X POST http://<PRODUCTION_IP>/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "johndoe",
+    "email": "john@example.com",
+    "full_name": "John Doe"
+  }'
+
+# Get user by username
+curl http://<PRODUCTION_IP>/api/v1/users/username/johndoe
+```
+
+### **Development Workflow**
+
+```bash
+# Run all validation checks (lint, security, tests)
+make validate
+
+# Run tests with coverage
+make coverage
+
+# Build Docker image locally
+make docker-build
+
+# Run application locally (DB in Docker)
 make db          # Start PostgreSQL container
 make migrate-up  # Run migrations
-make run         # Run Go application
+make run         # Start Go application
 ```
 
 ---
 
-## API Endpoints
+## 📚 **API Endpoints**
 
-All endpoints use base URL: `http://localhost:8080/api/v1`
+**Base URL:** 
+- Local: `http://localhost:8080/api/v1`
+- Production: `http://<PRODUCTION_IP>/api/v1` (replace with your GKE Load Balancer IP)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/health` | Liveness probe (Kubernetes health check) |
-| GET | `/ready` | Readiness probe (Kubernetes readiness check) |
-| GET | `/users` | Get all users |
-| GET | `/users/username/:username` | Get user by username |
-| GET | `/users/id/:id` | Get user by UUID |
-| POST | `/users` | Create new user |
-| PATCH | `/users/id/:id` | Update user by UUID |
-| DELETE | `/users/id/:id` | Delete user by UUID |
+| **GET** | `/health` | Liveness probe (Kubernetes) |
+| **GET** | `/ready` | Readiness probe (database connectivity) |
+| **GET** | `/users` | List all users |
+| **GET** | `/users/username/:username` | Get user by username |
+| **GET** | `/users/id/:id` | Get user by UUID |
+| **POST** | `/users` | Create new user |
+| **PATCH** | `/users/id/:id` | Update user by UUID |
+| **DELETE** | `/users/id/:id` | Delete user by UUID |
 
-**Note**: Health probe endpoints (`/health` and `/ready`) are at the root level and do not require authentication.
-
-Example:
+**Example Request:**
 ```bash
-# Create a new user
 curl -X POST http://localhost:8080/api/v1/users \
   -H "Content-Type: application/json" \
-  -d '{"username": "johndoe", "email": "john@example.com", "full_name": "John Doe"}'
+  -d '{
+    "username": "alice",
+    "email": "alice@example.com",
+    "full_name": "Alice Johnson"
+  }'
 ```
 
+**Note:** Replace `localhost:8080` with your deployment URL when running in Kubernetes.
 
-
-## Key Features
-
-- UUID-based primary keys for security and scalability
-- Clean architecture with layered design
-- Comprehensive input validation
-- SQL injection prevention
-- Proper HTTP status codes
-- Structured error responses
-- **X-API-Key authentication** - Optional header-based authentication (401/403 responses)
-- **JSON structured logging** - Request tracing with unique IDs, latency tracking, automatic log levels
-- **Dockerized application** - Production-ready container (36MB)
-- **Docker Compose setup** - One-command development environment
-- **Multi-stage builds** - Optimized for size and security
-- **CI/CD pipeline** - Automated linting, security scanning, testing (golangci-lint + gosec)
-- **Kubernetes deployment** - Kubernetes deployment to GKE Autopilot cluster.
-- **Neon PostgreSQL** - Neon PostgreSQL as the managed database service.
----
-
-## Docker Implementation
-
-### Architecture
-
-Multi-stage Docker build using Alpine for compilation and Distroless for runtime:
-
-```dockerfile
-# Stage 1: Build static binary with Go 1.25 on Alpine
-FROM golang:1.25-alpine AS builder
-# ... build process ...
-
-# Stage 2: Minimal runtime on distroless
-FROM gcr.io/distroless/static-debian12
-# ... only binary + migrations ...
-```
-
-
-**Some points about my docker work:**
-- Image Size 36MB (98% reduction from 1.87 GB naive build)
-- Build Time ~25s (With layer caching)
-- Base Image with No shell, no package manager & runs as non-root (uid 65532) to minimize attack surface and security vulnerabilities.
-- Optimised while keeping in mind storage, bandwidth and deployment time.
-- Static Binaries Enabled to support minimal image.
-
-#### Image Versioning
-
-Images are tagged with commit SHA for immutable, traceable deployments. :
-
-```bash
-# Each commit builds a unique image
-ghcr.io/fahadaziz44/cruder:2458f78  # Commit SHA tag
-```
-This will help us to rollback, traceability and reproducibility to any previous version if needed.
-
-**How it works:**
-- CI/CD automatically tags images with short commit SHA (`git rev-parse --short HEAD`)
-- Kubernetes deployments reference specific SHA tags
-- Rollback: `kubectl set image deployment/cruder-app cruder-app=ghcr.io/.../cruder:PREVIOUS_SHA -n production`
-
-### Docker Compose
-
-Full development environment (app + database):
-
-```yaml
-services:
-  db:
-    image: postgres:latest
-    healthcheck: pg_isready
-
-  app:
-    build: .
-    depends_on:
-      db:
-        condition: service_healthy
-```
-
-### Technical Decisions
-
-1. **Distroless over Alpine** for runtime: Smaller attack surface, built-in CA certs
-2. **Static binary compilation**: No runtime dependencies, portable
-3. **Build cache optimization**: Dependencies cached separately from source code
-
-- [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
-
----
-
-## CI/CD Pipeline
-
-Two-workflow architecture following production best practices: **CI for quality gates, CD for deployment**.
-
-#### CI Workflow (`.github/workflows/ci.yml`)
-**Triggers**: All branches and PRs
-**Jobs** (parallel, ~45s): Lint → Security Scan → Tests → Build Verification
-
-#### CD Workflow (`.github/workflows/deploy.yml`)
-**Triggers**: Push to `master` only
-**Jobs** (sequential, ~10-15 mins):
-1. Build Docker Image → Push to ghcr.io
-2. Deploy to Staging (automatic, 2 replicas)
-3. Deploy to Production (manual approval, 3 replicas)
-
----
-
-## Logging
-
-The application uses **structured JSON logging** with automatic request tracing:
-
-**Features:**
-- All logs in JSON format (startup, requests, errors)
-- Automatic log levels based on HTTP status codes
-- Unique Request-ID header added to all responses `X-Request-ID` header
-**Log Level**
-- INFO: 2xx status codes
-- WARN: 4xx status codes
-- ERROR: 5xx status codes and request failures
-
-**Example log output:**
+**Example Response:**
 ```json
-{"time":"2025-10-31T16:58:03Z","level":"INFO","msg":"Request completed","request_id":"5ca149c4-a6cc-4fb4-a151-075828504e48","method":"GET","path":"/api/v1/users","status_code":200,"latency":23959166,"client_ip":"::1","user_agent":"curl/8.7.1"}
+{
+  "id": "123e4567-e89b-12d3-a456-426614174000",
+  "username": "alice",
+  "email": "alice@example.com",
+  "full_name": "Alice Johnson",
+  "created_at": "2024-11-19T10:30:00Z",
+  "updated_at": "2024-11-19T10:30:00Z"
+}
 ```
-
-**How to use:**
-- **Controllers**: Access request logger via Gin context
-- **Services**: Pass logger for important business events
-- **Startup/errors**: Use structured logger for consistency
-
-**For detailed logging documentation**, see [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md)
 
 ---
 
-## Testing
-The project has comprehensive unit tests for the service layer.
+## 🔒 **Security Features**
+
+- **UUID-based primary keys** (prevents enumeration attacks)
+- **SQL injection prevention** (parameterized queries)
+- **Input validation** (username, email, full_name constraints)
+- **Non-root containers** (uid 65532, dropped capabilities)
+- **Minimal Docker images** (distroless, no shell, no package manager)
+- **TLS/SSL database connections** (Neon PostgreSQL requires encryption)
+- **Optional X-API-Key authentication** (header-based access control)
+- **Secret management** (Kubernetes secrets, not hardcoded)
+
+---
+
+## 🛠️ **CI/CD Pipeline**
+
+### **CI Workflow** (`.github/workflows/ci.yml`)
+**Triggers:** All branches and pull requests
+**Duration:** ~45 seconds (parallel execution)
+
+```
+Lint (golangci-lint) ──┐
+                       |
+                       |
+Code formatting (gofmt)|
+                       ├──> Quality Gate
+Security Scan (gosec) ─┤
+                       │
+Unit Tests ────────────┤
+                       │
+Build Verification ────┘
+```
+
+### **CD Workflow** (`.github/workflows/deploy.yml`)
+**Triggers:** Push to `master` branch
+**Duration:** ~10-15 minutes
+
+```
+Build & Push Docker Image (SHA-tagged)
+            ↓
+Deploy to Staging (automatic)
+  • Update image with SHA tag
+  • Rolling update (2 replicas)
+  • Smoke tests (/health, /ready)
+            ↓
+Deploy to Production (manual approval required)
+  • Update image with SHA tag
+  • Zero-downtime rolling update (3 replicas)
+  • Smoke tests (/health, /ready)
+  • Auto-rollback on failure
+```
+
+**Note:** Deployments to GKE are currently **disabled**. The deployment code remains visible to demonstrate CI/CD practices. To enable deployments, see the [Enabling Deployments section](./kubernetes/README_GKE.md#-enabling-deployments) in `kubernetes/README_GKE.md`.
+
+**Key Features:**
+- **Immutable deployments**: Every commit creates a unique SHA-tagged image
+- **Progressive rollout**: Staging validates changes before production
+- **Automated validation**: Health checks prevent bad deployments
+- **Traceability**: Know exactly which commit is running in each environment
+
+---
+
+## 📊 **Kubernetes Deployment**
+
+### **Multi-Environment Strategy**
+
+| Setting | Staging | Production |
+|---------|---------|------------|
+| **Replicas** | 2 | 3 |
+| **Downtime Tolerance** | 50% (1 pod) | 0% (zero-downtime) |
+| **Memory** | 128Mi-256Mi | 256Mi-512Mi |
+| **CPU** | 100m-500m | 250m-1000m |
+| **Database** | Neon dev branch | Neon production branch |
+| **Deployment** | Automatic | Manual approval |
+
+### **Zero-Downtime Configuration**
+
+**Production deployment strategy:**
+```yaml
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1        # Create 1 extra pod during update
+    maxUnavailable: 0  # Never drop below 3 running pods
+```
+
+**Health probes prevent bad deployments:**
+```yaml
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 20
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /ready
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  failureThreshold: 3
+```
+
+**Graceful shutdown prevents connection drops:**
+```yaml
+lifecycle:
+  preStop:
+    exec:
+      command: ["/bin/sh", "-c", "sleep 10"]  # Drain connections
+```
+
+---
+
+## 📖 **Documentation**
+
+Comprehensive documentation is available in the `docs/` directory:
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System design and zero-downtime deployment strategy
+- **[RUNBOOK.md](./RUNBOOK.md)** - Operational guide for deployments and troubleshooting
+- **[DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md)** - Docker optimization journey (1.87GB → 36MB)
+- **[JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md)** - Structured logging design
+- **[Kubernetes Deployment Guide](./kubernetes/README.md)** - Kubernetes manifest documentation
+- **[Project Origin](./docs/assignment/README.md)** - How this project evolved from an assignment
+
+---
+
+## **Testing**
 
 ```bash
 # Run all unit tests
 make test
 
-# View coverage summary
+# Run tests with coverage report
 make coverage
 
 # Generate HTML coverage report
 make coverage-html
+open coverage.html
 ```
 
-### Run All Validation Checks
+**Test Coverage:** Service layer has comprehensive unit tests following the Given-When-Then pattern.
 
+**Example test:**
+```go
+// Given: A valid user exists in the repository
+func TestGetByID_Success(t *testing.T) {
+    // When: Fetching user by ID
+    user, err := service.GetByID(ctx, validID)
+
+    // Then: User is returned without error
+    assert.NoError(t, err)
+    assert.Equal(t, "johndoe", user.Username)
+}
+```
+
+### Run API Tests
 ```bash
-# Run linting + security scan + tests
-make validate
-```
+# Test local deployment
+./test-api.sh http://localhost:8080
+
+# Test production deployment (replace with your IP)
+./test-api.sh http://<PRODUCTION_IP>
+
+# Keep test data for debugging
+./test-api.sh --no-cleanup
 
 ---
 
-## Authentication
+## ⚙️ **Configuration**
 
-The API supports optional **X-API-Key authentication** for securing endpoints:
+The application uses **environment-based configuration** with validation and fail-fast behavior.
 
-**How it works:**
-- If `API_KEY` environment variable is set → Authentication is **enabled**
-- If `API_KEY` is not set → Authentication is **disabled** (development mode)
+**Required Environment Variables:**
+```bash
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+```
+
+**Optional Environment Variables (with defaults):**
+```bash
+POSTGRES_HOST=localhost      # Database host
+POSTGRES_PORT=5432          # Database port
+POSTGRES_DB=cruder          # Database name
+POSTGRES_SSL_MODE=disable   # SSL mode (use 'require' in production)
+PORT=8080                   # Application port
+API_KEY=                    # Optional API key for authentication
+```
+
+**Development Setup:**
+1. Copy `.env.example` to `.env`
+2. Update `POSTGRES_USER` and `POSTGRES_PASSWORD`
+3. Start the application with `docker-compose up`
+
+**Production Setup:**
+- Configuration is managed via Kubernetes ConfigMaps and Secrets
+- Sensitive credentials (database password, API keys) are stored in Kubernetes Secrets
+- Non-sensitive config (database host, port) is stored in ConfigMaps
+
+---
+
+## 🔐 **Authentication** (Optional)
+
+The API supports optional **X-API-Key authentication**:
+
+**Enable authentication:**
+```bash
+# Add to .env file
+API_KEY=your-secret-key-here
+```
+
+**Make authenticated requests:**
+```bash
+curl -H "X-API-Key: your-secret-key-here" \
+  http://localhost:8080/api/v1/users
+```
 
 **Responses:**
-- Valid key → Request proceeds normally
-- Missing header → `401 Unauthorized`
-- Wrong key → `403 Forbidden`
+- ✅ Valid key → Request proceeds
+- ❌ Missing header → `401 Unauthorized`
+- ❌ Wrong key → `403 Forbidden`
 
-**Usage:**
-```bash
-# Enable authentication (add to .env)
-API_KEY=your-secret-key-here
-
-# Make authenticated request
-curl -H "X-API-Key: {your-secret-key-here}" http://localhost:8080/api/v1/users
-
-```
-
-**Development**: Leave `API_KEY` commented out in `.env` to disable authentication during development.
+**Development mode:** Leave `API_KEY` unset to disable authentication during local development.
 
 ---
 
-## Configuration
-We are using envconfig for configuration. I choose envconfig because of a standard way to handle configuration and it is ease of use.
-The benefits of using envconfig are:
-- Automatic validation
-- Automatic type conversion
-- Can enforce required and optional fields
-- Default values can be set
-- Clear error messages (Catch errors at compile time)
-- Self-documenting code via struct tags, One struct shows everything needed for configuration, easy to understand and maintain
-- Fail-Fast - App won't start if config is wrong
-- Centralized, not scattered across multiple files
+## 🎓 **What This Project Teaches**
 
-Environment-only configuration :
-- All configuration via environment variables
-- Single source of truth (`.env` file for local development)
-- Sensible defaults for non-sensitive config
+This template demonstrates real-world backend engineering practices:
 
-**Required variables**: `POSTGRES_USER`, `POSTGRES_PASSWORD`
-**Optional variables** (with defaults): `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_SSL_MODE`, `PORT`
+### **Backend Development**
+- Clean architecture with layered design (controller → service → repository)
+- Proper error handling and HTTP status codes
+- Input validation and security best practices
+- Database migrations and schema management
+- Unit testing with mocks and dependency injection
 
-The application will fail with a clear error message if required environment variables are missing.
+### **DevOps & Cloud**
+- Zero-downtime deployment strategies
+- Multi-environment Kubernetes architecture
+- CI/CD pipeline design and automation
+- Docker optimization and security hardening
+- Infrastructure as Code with Kubernetes manifests
 
----
-
-## Kubernetes Implementation
-
-A complete Local Development Kubernetes deployment setup is available to showcase Kubernetes concepts including Persistent Volumes (PV), Persistent Volume Claims (PVC), StatefulSets, Deployments, Services, Ingress etc.
-
-**Note**: The Kubernetes implementation with Persistent Volume storage for PostgreSQL is available in `./kubernetes/Readme.md` in the branch `feature/k8s_with_persistant-storage`. That branch demonstrates Kubernetes concepts including StatefulSets and persistent storage.
-
-**Production Setup**: In the `master` branch, production deployments use a **managed database service** instead of running PostgreSQL in-cluster for better reliability and reduced operational complexity.
-
-For detailed Kubernetes implementation documentation, see [Kubernetes implementation documentation](./kubernetes/README.md).
+### **Production Operations**
+- Health probes and graceful shutdown
+- Structured logging for observability
+- Secret management and configuration
+- Rollback strategies and incident response
+- Resource management and auto-scaling
 
 ---
 
-### Updated: Kubernetes Deployment on GKE Autopilot Cluster with Neon PostgreSQL as the managed database service.
+## 🚧 **Future Enhancements**
 
+Potential improvements to make this even more production-ready:
 
-The application is deployed to **Google Kubernetes Engine (GKE) Autopilot** with **Neon PostgreSQL** as the managed database service.
-
-#### Live Deployment
-
-The application is **currently deployed and running** on GKE Autopilot. You can test it directly:
-
-- Production: `http://136.110.146.135`
-  - Health check: `http://136.110.146.135/health`
-  - API base: `http://136.110.146.135/api/v1`
-  
-- Staging: `http://34.49.250.233`
-  - Health check: `http://34.49.250.233/health`
-  - API base: `http://34.49.250.233/api/v1`
-
-**Example:**
-```bash
-# Test production health endpoint
-curl http://136.110.146.135/health
-
-# Test production API
-curl http://136.110.146.135/api/v1/users
-```
-
-#### Architecture Overview
-
- 
-
-```
-
-┌─────────────────────────────────────────────────┐
-
-│           GKE Autopilot Cluster                 │
-
-│                                                 │
-
-│  ┌──────────────────┐    ┌──────────────────┐  │
-
-│  │ Staging Namespace│    │ Production NS    │  │
-
-│  │                  │    │                  │  │
-
-│  │  GCE Ingress     │    │  GCE Ingress     │  │
-
-│  │  34.49.250.233   │    │  136.110.146.135 │  │
-
-│  │       ↓          │    │       ↓          │  │
-
-│  │  Service (LB)    │    │  Service (LB)    │  │
-
-│  │       ↓          │    │       ↓          │  │
-
-│  │  Deployment      │    │  Deployment      │  │
-
-│  │  (2 replicas)    │    │  (3 replicas)    │  │
-
-│  └────────┬─────────┘    └────────┬─────────┘  │
-
-│           │                       │            │
-
-└───────────┼───────────────────────┼────────────┘
-
-            │                       │
-
-            ↓                       ↓
-
-    ┌───────────────┐       ┌───────────────┐
-
-    │ Neon Dev DB   │       │ Neon Prod DB  │
-
-    │ (SSL required)│       │ (SSL required)│
-
-    └───────────────┘       └───────────────┘
-
-```
-
- **Edit**: I have scaled down the replicas to 1 for staging and 2 for production to save costs.
- **Edit2**: Rate limiting implemented through google cloud armor policy at the load balancer level.(10 requests per IP per 30 seconds)
-
-#### Key Features
-
- 
-
-- **Managed Database**: Neon PostgreSQL (fully managed, serverless)
-
-  - Staging → Neon development branch
-
-  - Production → Neon production branch
-
-  - SSL/TLS encryption(unencrypted connections are not allowed)
-
- 
-
-- **GKE Autopilot**: Fully managed Kubernetes cluster
-  - Built-in security and compliance
-
-- **GCE Ingress Controller**: Built-in Google Cloud Load Balancer
-
-  - No need for nginx ingress controller because GCE ingress controller is built-in and we can use it to route traffic to our application. further more GKE Autopilot gives each namespace a separate load balancer and ip address.
-  - Production: `136.110.146.135`
-  - Staging: `34.49.250.233`
-
-- **Multi-Environment Setup**:
-
-  - Separate namespaces for staging and production
-
-  - Environment-specific configurations via ConfigMaps
-
-  - Different replica counts (2 for staging, 3 for production)
-
- 
-
-### Changes for GKE Autopilot
-
- We removed PostgreSQL StatefulSets (replaced with Neon managed database), Persistent Volumes, PVCs (no in-cluster database), NGINX Ingress Controller (GKE provides GCE ingress)
-
- 
-
-We added Neon PostgreSQL connection strings in ConfigMaps, SSL/TLS requirement for database connections, GCE Ingress configuration, GHCR (GitHub Container Registry) for container images, Image pull secrets for private registry access
-Spot Pods for Staging.
- 
-
-For detailed deployment instructions and manifest files, see [Kubernetes Deployment Guide](./kubernetes/README.md).
-
-
-### Future Enhancements
-- **Rate limiting** - Protect API from abuse and DoS attacks
-- **Integration tests** - End-to-end API validation in CI/CD pipeline
-- **HTTPS/TLS** - SSL certificates for secure production communication
-
-- **Terraform** - Infrastructure as Code for GKE Autopilot cluster and Neon PostgreSQL
-- **Monitoring setup** - Prometheus/Grafana or Google Cloud Monitoring with alerts
-- **Automated Database Migrations** - How to manage database changes reliably and safely in a Continuous Delivery (CD) workflow?
-- **Observability** - Tools to monitor and observe the application in production. (metrics, traces, logs)
-- **API documentation** - Swagger/OpenAPI for self-documenting API
-- **JWT authentication** - Per-user authentication (currently using API key)
-- **Pagination** - Handle large user lists efficiently
-- **Google Cloud Armor** - WAF and DDoS protection at load balancer level
-- **Feature flags** - Gradual rollouts and safe feature deployment
+- [ ] **HTTPS/TLS** - SSL certificates for secure communication
+- [ ] **Rate Limiting** - Protect API from abuse (currently implemented at LB level via Cloud Armor)
+- [ ] **Monitoring** - Prometheus/Grafana dashboards with alerts
+- [ ] **Terraform** - Infrastructure as Code for GKE and Neon
+- [ ] **Integration Tests** - End-to-end API validation in CI/CD
+- [ ] **Database Backups** - Automated backup and restore procedures
+- [ ] **API Documentation** - Swagger/OpenAPI specification
+- [ ] **JWT Authentication** - Per-user authentication (currently using API key)
+- [ ] **Pagination** - Handle large datasets efficiently
+- [ ] **Feature Flags** - Gradual rollouts and safe feature deployment
 
 ---
 
-## Documentation
+## 📄 **License**
 
-Comprehensive documentation available in `docs/`:
-- [DOCKER_SIZE_OPTIMIZATION.md](./docs/DOCKER_SIZE_OPTIMIZATION.md) - Docker size analysis and optimization
-- [JSON_LOGGING_IMPLEMENTATION.md](./docs/JSON_LOGGING_IMPLEMENTATION.md) - Structured logging implementation
-- [Kubernetes Deployment Guide](./kubernetes/README.md) - Kubernetes deployment guide
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
+
+## 🙏 **Acknowledgments**
+
+This project evolved from a technical assessment into a comprehensive exploration of production-grade backend architecture. It represents the type of system I'd build for real-world use, with all the operational considerations that come with running services in production.
+
+**Key Learnings:**
+- How to achieve zero-downtime deployments with Kubernetes
+- The importance of health probes and graceful shutdown
+- Docker optimization techniques (98% size reduction)
+- Progressive deployment strategies (staging → production)
+- Structured logging for production observability
+- Security hardening at every layer
+
+---
+
+## 📬 **Contact**
+
+**Built by:** Fahad Aziz
+**GitHub:** [@fahadAziz44](https://github.com/fahadAziz44)
+
+---
+
+**⭐ If you find this useful, please consider giving it a star!**

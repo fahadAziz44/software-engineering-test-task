@@ -1,8 +1,8 @@
-# Kubernetes Deployment
+# Kubernetes Deployment (Local Development)
 
-**Note: This is the state of Kubernetes development before the deployment to GKE Autopilot cluster and Neon PostgreSQL as the managed database service. And demonstrates the concepts of Kubernetes deployment and management. For Latest State see [GKE Deployment Journey](./README_GKE.md)**
+**Note: This documentation covers local Kubernetes development setup. For production GKE Autopilot deployment, see [GKE Deployment Guide](./README_GKE.md)**
 
-Production-ready Kubernetes setup for CRUDER API with multi-environment support.
+This demonstrates Kubernetes concepts including StatefulSets, PersistentVolumes, and local multi-environment setup.
 
 ## What's Implemented
 
@@ -66,22 +66,11 @@ kubectl get all -n production
 - Health probes (liveness & readiness)
 - Graceful shutdown (preStop hooks)
 - Resource limits (CPU, memory)
-- Persistent storage for databases(I need to look more into this about options for production)
 - Multi-environment isolation
 - Zero-downtime rolling updates (production)
 - Security contexts (non-root, dropped capabilities)
 
-### TODO Before Production
-
-Look for `TODO:` tags in manifest files for production enhancements:
-1. TLS/SSL Certificates (`ingress.yaml`)
-   - Add Google Cloud Load Balancer for SSL certificates
-   - Enable HTTPS with proper TLS configuration
-2. Specify POSTGRES_SSL_MODE for production(`configmap.yaml`)
-   - Use "require" in real production
-3. Resource tuning(`deployment.yaml`)
-   - Monitor actual CPU/memory usage
-   - Adjust limits based on real workload
+**Note:** This local setup uses in-cluster PostgreSQL with StatefulSets. For production GKE deployment, see [README_GKE.md](./README_GKE.md) which uses managed Neon PostgreSQL.
 
 
 ## 🔍 Key Configuration Differences
