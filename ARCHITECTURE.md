@@ -22,7 +22,7 @@ This document provides a comprehensive overview of the microservice architecture
 
 The system follows a cloud-native microservice architecture designed for deployment on Google Kubernetes Engine (GKE Autopilot) with a managed PostgreSQL database.
 
-**Note:** Deployments are currently disabled for portfolio showcase purposes. See [kubernetes/README_GKE.md](./kubernetes/README_GKE.md) for deployment setup.
+**Note:** Deployments are currently paused for cost optimization. See [kubernetes/README_GKE.md](./kubernetes/README_GKE.md) for deployment setup.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐

@@ -4,7 +4,7 @@ Production deployment on **Google Kubernetes Engine (GKE) Autopilot** with **Neo
 
 ## 🚀 Enabling Deployments
 
-**⚠️ Portfolio Showcase Mode:** The GitHub Actions deployment workflow (`.github/workflows/deploy.yml`) is **disabled by default** to prevent actual deployments. The deployment code remains visible to demonstrate CI/CD practices.
+**⚠️ Deployment Paused:** The GitHub Actions deployment workflow (`.github/workflows/deploy.yml`) is **paused** to minimize cloud costs. The deployment code remains fully functional.
 
 ### **Quick Enable Steps**
 

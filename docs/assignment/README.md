@@ -24,7 +24,7 @@ This project became a deep dive into the full lifecycle of backend systems:
 
 ## Transformation
 
-After completing the assignment, I transformed this into a **production-ready microservice template** that showcases real-world backend engineering practices. The template is now suitable for:
+After completing the assignment, I engineered this into a **production-grade microservice** that demonstrates real-world backend engineering practices. The system is now suitable for:
 
 - Portfolio demonstrations
 - Starting point for new microservices

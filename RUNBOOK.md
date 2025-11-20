@@ -1,6 +1,6 @@
 # Operational Runbook
 
-This runbook demonstrates production-ready operational procedures for deploying, monitoring, troubleshooting, and maintaining the microservice on Kubernetes. It showcases real-world DevOps practices including zero-downtime deployments, health monitoring, and incident response.
+This runbook details production operational procedures for deploying, monitoring, troubleshooting, and maintaining the microservice on Kubernetes. It covers real-world DevOps practices including zero-downtime deployments, health monitoring, and incident response.
 
 **Note:** Replace `<PRODUCTION_IP>` and `<STAGING_IP>` with your actual GKE Load Balancer IPs when deployed.
 
@@ -22,7 +22,7 @@ This runbook demonstrates production-ready operational procedures for deploying,
 
 ## Prerequisites
 
-**⚠️ Note:** The deployment workflows in `.github/workflows/deploy.yml` are **disabled by default** (`if: false`) for portfolio showcase purposes. The deployment code remains visible to demonstrate CI/CD practices. To enable automated deployments to GKE, see the [Enabling Deployments section](../kubernetes/README_GKE.md#-enabling-deployments) in `kubernetes/README_GKE.md`.
+**⚠️ Note:** The deployment workflows in `.github/workflows/deploy.yml` are **paused** (`if: false`) for cost optimization. The deployment code remains fully functional. To resume automated deployments to GKE, see the [Enabling Deployments section](../kubernetes/README_GKE.md#-enabling-deployments) in `kubernetes/README_GKE.md`.
 
 ### Required Access
 - **GitHub**: Write access to repository

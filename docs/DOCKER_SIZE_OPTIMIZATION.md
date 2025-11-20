@@ -1,6 +1,6 @@
 # Docker Image Optimization
 
-**Assignment Requirement**: *"Write simple dockerfile for the application. Make the docker container to be as minimal as possible (in size)."*
+**Goal**: Create a minimal, secure Docker image for production deployment.
 
 ---
 

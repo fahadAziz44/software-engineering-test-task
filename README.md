@@ -1,6 +1,6 @@
-# Production-Ready Go Microservice Template
+# User Management Microservice
 
-**A production-grade microservice architecture demonstrating zero-downtime Kubernetes deployments, automated CI/CD pipelines, and cloud-native best practices.**
+**A production-grade Go microservice designed for zero-downtime Kubernetes deployments, automated CI/CD, and high-security standards.**
 
 [![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-GKE%20Autopilot-326CE5?style=flat&logo=kubernetes)](https://kubernetes.io/)
@@ -9,9 +9,9 @@
 
 ---
 
-## 🎯 **What This Demonstrates**
+## 🎯 **System Overview**
 
-This project showcases **production-ready microservice engineering** designed for deployment on Google Kubernetes Engine:
+This service was engineered for high-availability deployment on Google Kubernetes Engine (GKE Autopilot):
 
 - ✅ **Zero-Downtime Deployments** - Rolling updates with health probes and graceful shutdown
 - ✅ **Multi-Environment Architecture** - Isolated staging and production namespaces
@@ -24,7 +24,7 @@ This project showcases **production-ready microservice engineering** designed fo
 - 🌐 Production: `http://<PRODUCTION_IP>` ([Health Check](http://<PRODUCTION_IP>/health))
 - 🔧 Staging: `http://<STAGING_IP>` ([Health Check](http://<STAGING_IP>/health))
 
-**Note:** This is a portfolio showcase project. Replace `<PRODUCTION_IP>` and `<STAGING_IP>` with your actual GKE Load Balancer IPs when deployed.
+**Note:** The live deployment on GKE has been paused to minimize cloud costs. The infrastructure code remains fully functional and can be redeployed at any time.
 
 ---
 
@@ -453,32 +453,7 @@ curl -H "X-API-Key: your-secret-key-here" \
 
 ---
 
-## 🎓 **What This Project Teaches**
 
-This template demonstrates real-world backend engineering practices:
-
-### **Backend Development**
-- Clean architecture with layered design (controller → service → repository)
-- Proper error handling and HTTP status codes
-- Input validation and security best practices
-- Database migrations and schema management
-- Unit testing with mocks and dependency injection
-
-### **DevOps & Cloud**
-- Zero-downtime deployment strategies
-- Multi-environment Kubernetes architecture
-- CI/CD pipeline design and automation
-- Docker optimization and security hardening
-- Infrastructure as Code with Kubernetes manifests
-
-### **Production Operations**
-- Health probes and graceful shutdown
-- Structured logging for observability
-- Secret management and configuration
-- Rollback strategies and incident response
-- Resource management and auto-scaling
-
----
 
 ## 🚧 **Future Enhancements**
 
@@ -506,14 +481,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 **Acknowledgments**
 
 This project evolved from a technical assessment into a comprehensive exploration of production-grade backend architecture. It represents the type of system I'd build for real-world use, with all the operational considerations that come with running services in production.
-
-**Key Learnings:**
-- How to achieve zero-downtime deployments with Kubernetes
-- The importance of health probes and graceful shutdown
-- Docker optimization techniques (98% size reduction)
-- Progressive deployment strategies (staging → production)
-- Structured logging for production observability
-- Security hardening at every layer
 
 ---
 
