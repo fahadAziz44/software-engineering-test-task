@@ -2,38 +2,40 @@
 
 **A production-grade microservice architecture demonstrating zero-downtime Kubernetes deployments, automated CI/CD pipelines, and cloud-native best practices.**
 
-[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-GKE%20Autopilot-326CE5?style=flat&logo=kubernetes)](https://kubernetes.io/)
-[![Docker Image Size](https://img.shields.io/badge/Docker-36MB-2496ED?style=flat&logo=docker)](https://github.com/fahadAziz44/software-engineering-test-task/pkgs/container/cruder)
+[![Docker Image Size](https://img.shields.io/badge/Docker-36MB-2496ED?style=flat&logo=docker)](https://github.com/fahadAziz44/zero-downtime-go-api/pkgs/container/cruder)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## 🎯 **What This Demonstrates**
 
-This project showcases **production-ready backend engineering** with real-world deployment on Google Kubernetes Engine:
+This project showcases **production-ready microservice engineering** designed for deployment on Google Kubernetes Engine:
 
 - ✅ **Zero-Downtime Deployments** - Rolling updates with health probes and graceful shutdown
 - ✅ **Multi-Environment Architecture** - Isolated staging and production namespaces
 - ✅ **Automated CI/CD Pipeline** - Quality gates, security scanning, progressive deployment
-- ✅ **Cloud-Native Design** - Running live on GKE Autopilot with managed PostgreSQL
+- ✅ **Cloud-Native Design** - GKE Autopilot-ready with managed PostgreSQL support
 - ✅ **Observability** - Structured JSON logging with request tracing
 - ✅ **Docker Optimization** - 98% size reduction (1.87GB → 36MB)
 
-**Live Deployment:**
-- 🌐 Production: `http://136.110.146.135` ([Health Check](http://136.110.146.135/health))
-- 🔧 Staging: `http://34.49.250.233` ([Health Check](http://34.49.250.233/health))
+**Deployment Architecture:**
+- 🌐 Production: `http://<PRODUCTION_IP>` ([Health Check](http://<PRODUCTION_IP>/health))
+- 🔧 Staging: `http://<STAGING_IP>` ([Health Check](http://<STAGING_IP>/health))
+
+**Note:** This is a portfolio showcase project. Replace `<PRODUCTION_IP>` and `<STAGING_IP>` with your actual GKE Load Balancer IPs when deployed.
 
 ---
 
 ## 🏗️ **Architecture Overview**
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│                  GitHub Actions CI/CD                   │
-│                                                         │
-│  Lint → Security Scan → Tests → Build → Deploy         │
-└─────────────────┬───────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                  GitHub Actions CI/CD                       │
+│                                                             |
+│  Lint -> Formatting → Security Scan → Tests → Build → Deploy│
+└─────────────────┬───────────────────────────────────────────┘
                   │
                   ↓
 ┌─────────────────────────────────────────────────────────┐
@@ -43,7 +45,7 @@ This project showcases **production-ready backend engineering** with real-world 
 │  │ Staging Namespace│      │Production Namespace│       │
 │  │                  │      │                  │        │
 │  │  Load Balancer   │      │  Load Balancer   │        │
-│  │  34.49.250.233   │      │  136.110.146.135 │        │
+│  │  <STAGING_IP>    │      │  <PRODUCTION_IP> │        │
 │  │       ↓          │      │       ↓          │        │
 │  │  Service (LB)    │      │  Service (LB)    │        │
 │  │       ↓          │      │       ↓          │        │
@@ -108,7 +110,7 @@ This project showcases **production-ready backend engineering** with real-world 
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Language** | Go 1.23+ | High-performance backend |
+| **Language** | Go 1.25 | High-performance backend |
 | **Web Framework** | Gin | HTTP routing and middleware |
 | **Database** | PostgreSQL (Neon) | Managed, serverless SQL database |
 | **Container** | Docker (Distroless) | Minimal, secure runtime |
@@ -125,8 +127,8 @@ This project showcases **production-ready backend engineering** with real-world 
 
 ```bash
 # Clone the repository
-git clone https://github.com/fahadAziz44/software-engineering-test-task.git
-cd software-engineering-test-task
+git clone https://github.com/fahadAziz44/zero-downtime-go-api.git
+cd zero-downtime-go-api
 
 # Start database and application with Docker Compose
 docker-compose up --build
@@ -140,14 +142,16 @@ make migrate-up
 ### **Test the Live Deployment**
 
 ```bash
+# Replace <PRODUCTION_IP> with your actual GKE Load Balancer IP
+
 # Production health check
-curl http://136.110.146.135/health
+curl http://<PRODUCTION_IP>/health
 
 # List all users
-curl http://136.110.146.135/api/v1/users
+curl http://<PRODUCTION_IP>/api/v1/users
 
 # Create a user
-curl -X POST http://136.110.146.135/api/v1/users \
+curl -X POST http://<PRODUCTION_IP>/api/v1/users \
   -H "Content-Type: application/json" \
   -d '{
     "username": "johndoe",
@@ -156,7 +160,7 @@ curl -X POST http://136.110.146.135/api/v1/users \
   }'
 
 # Get user by username
-curl http://136.110.146.135/api/v1/users/username/johndoe
+curl http://<PRODUCTION_IP>/api/v1/users/username/johndoe
 ```
 
 ### **Development Workflow**
@@ -181,7 +185,9 @@ make run         # Start Go application
 
 ## 📚 **API Endpoints**
 
-**Base URL:** `http://localhost:8080/api/v1` (local) or `http://136.110.146.135/api/v1` (production)
+**Base URL:** 
+- Local: `http://localhost:8080/api/v1`
+- Production: `http://<PRODUCTION_IP>/api/v1` (replace with your GKE Load Balancer IP)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -204,6 +210,8 @@ curl -X POST http://localhost:8080/api/v1/users \
     "full_name": "Alice Johnson"
   }'
 ```
+
+**Note:** Replace `localhost:8080` with your deployment URL when running in Kubernetes.
 
 **Example Response:**
 ```json
@@ -240,6 +248,9 @@ curl -X POST http://localhost:8080/api/v1/users \
 
 ```
 Lint (golangci-lint) ──┐
+                       |
+                       |
+Code formatting (gofmt)|
                        ├──> Quality Gate
 Security Scan (gosec) ─┤
                        │
@@ -249,7 +260,7 @@ Build Verification ────┘
 ```
 
 ### **CD Workflow** (`.github/workflows/deploy.yml`)
-**Triggers:** Push to `master` only
+**Triggers:** Push to `master` branch
 **Duration:** ~10-15 minutes
 
 ```
@@ -266,6 +277,8 @@ Deploy to Production (manual approval required)
   • Smoke tests (/health, /ready)
   • Auto-rollback on failure
 ```
+
+**Note:** Deployments to GKE are currently **disabled**. The deployment code remains visible to demonstrate CI/CD practices. To enable deployments, see the [Enabling Deployments section](./kubernetes/README_GKE.md#-enabling-deployments) in `kubernetes/README_GKE.md`.
 
 **Key Features:**
 - **Immutable deployments**: Every commit creates a unique SHA-tagged image

@@ -2,15 +2,57 @@
 
 Production deployment on **Google Kubernetes Engine (GKE) Autopilot** with **Neon PostgreSQL** as the managed database service.
 
-## 🚀 Live Deployment
+## 🚀 Enabling Deployments
 
-- **Production**: `http://136.110.146.135`
-  - Health: `http://136.110.146.135/health`
-  - API: `http://136.110.146.135/api/v1`
-  
-- **Staging**: `http://34.49.250.233`
-  - Health: `http://34.49.250.233/health`
-  - API: `http://34.49.250.233/api/v1`
+**⚠️ Portfolio Showcase Mode:** The GitHub Actions deployment workflow (`.github/workflows/deploy.yml`) is **disabled by default** to prevent actual deployments. The deployment code remains visible to demonstrate CI/CD practices.
+
+### **Quick Enable Steps**
+
+1. **Create GKE Cluster** (if needed):
+   ```bash
+   gcloud container clusters create-auto autopilot-cluster-1 \
+     --region=europe-central2 \
+     --project=YOUR_PROJECT_ID
+   ```
+
+2. **Set up Service Account**:
+   ```bash
+   gcloud iam service-accounts create github-actions-gke \
+     --display-name="GitHub Actions GKE Deployer"
+   
+   gcloud projects add-iam-policy-binding YOUR_PROJECT_ID \
+     --member="serviceAccount:github-actions-gke@YOUR_PROJECT_ID.iam.gserviceaccount.com" \
+     --role="roles/container.developer"
+   
+   gcloud iam service-accounts keys create key.json \
+     --iam-account=github-actions-gke@YOUR_PROJECT_ID.iam.gserviceaccount.com
+   ```
+
+3. **Add GitHub Secret**:
+   - Repository → Settings → Secrets → Actions → New secret
+   - Name: `GKE_SA_KEY`
+   - Value: Contents of `key.json`
+
+4. **Enable Workflow**:
+   - Edit `.github/workflows/deploy.yml`
+   - Remove `if: false` from `deploy-staging` and `deploy-production` jobs
+   - Update `GKE_CLUSTER` and `GKE_REGION` environment variables
+   - Replace `<STAGING_IP>` and `<PRODUCTION_IP>` placeholders
+
+5. **Deploy Manifests** (see Quick Deploy section below)
+
+**After deployment, get Load Balancer IPs:**
+```bash
+# Staging
+kubectl get svc cruder-service -n staging -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+
+# Production  
+kubectl get svc cruder-service -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+```
+
+**Deployment URLs** (replace with your actual IPs):
+- **Production**: `http://<PRODUCTION_IP>` ([Health Check](http://<PRODUCTION_IP>/health))
+- **Staging**: `http://<STAGING_IP>` ([Health Check](http://<STAGING_IP>/health))
 
 ## Architecture
 
@@ -18,12 +60,12 @@ Production deployment on **Google Kubernetes Engine (GKE) Autopilot** with **Neo
 GKE Autopilot Cluster
 │
 ├── Staging Namespace
-│   ├── GCE Ingress (34.49.250.233)
+│   ├── GCE Ingress (<STAGING_IP>)
 │   ├── Service (Load Balancer)
 │   └── Deployment (2 replicas)
 │
 └── Production Namespace
-    ├── GCE Ingress (136.110.146.135)
+    ├── GCE Ingress (<PRODUCTION_IP>)
     ├── Service (Load Balancer)
     └── Deployment (3 replicas)
     

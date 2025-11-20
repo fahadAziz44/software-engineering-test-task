@@ -1,5 +1,18 @@
 name: CD - Deploy to GKE
 
+# ⚠️ PORTFOLIO SHOWCASE MODE ⚠️
+# This workflow demonstrates production-ready CI/CD practices but deployments are disabled.
+# To enable deployments:
+#   1. Add GKE_SA_KEY secret to GitHub repository settings
+#   2. Update GKE_CLUSTER and GKE_REGION with your cluster details
+#   3. Remove the `if: false` conditions from deploy-staging and deploy-production jobs
+#
+# The deployment code remains visible to showcase:
+#   - Progressive deployment (staging → production)
+#   - Manual approval gates for production
+#   - Zero-downtime rolling updates
+#   - Automated smoke tests and health checks
+
 on:
   push:
     branches:
@@ -78,13 +91,17 @@ jobs:
           echo "${{ env.REGISTRY }}/${{ steps.repo.outputs.owner }}/cruder:${{ steps.vars.outputs.short_sha }}"
 
   # Job 2: Deploy to Staging (automatic)
+  # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # This job demonstrates staging deployment practices but is disabled to prevent actual deployments.
+  # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
   deploy-staging:
     name: Deploy to Staging
     runs-on: ubuntu-latest
     needs: build
+    if: false  # Disabled for portfolio showcase - remove this line to enable deployments
     environment:
       name: staging
-      url: http://34.49.250.233
+      url: http://<STAGING_IP>  # Replace with your staging Load Balancer IP
 
     steps:
       - name: Checkout code
@@ -158,16 +175,20 @@ jobs:
         run: |
           echo "::notice::✅ Successfully deployed to staging"
           echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
-          echo "::notice::URL: http://34.49.250.233"
+          echo "::notice::URL: http://<STAGING_IP>"  # Replace with your staging Load Balancer IP
 
   # Job 3: Deploy to Production (manual approval required)
+  # ⚠️ DISABLED FOR PORTFOLIO SHOWCASE ⚠️
+  # This job demonstrates production deployment with manual approval gates but is disabled.
+  # Remove `if: false` and ensure GKE_SA_KEY secret exists to enable.
   deploy-production:
     name: Deploy to Production
     runs-on: ubuntu-latest
     needs: [build, deploy-staging]
+    if: false  # Disabled for portfolio showcase - remove this line to enable deployments
     environment:
       name: production
-      url: http://136.110.146.135
+      url: http://<PRODUCTION_IP>  # Replace with your production Load Balancer IP
 
     steps:
       - name: Checkout code
@@ -241,7 +262,7 @@ jobs:
         run: |
           echo "::notice::🚀 Successfully deployed to PRODUCTION"
           echo "::notice::Image: ${{ env.REGISTRY }}/${{ needs.build.outputs.owner }}/cruder:${{ needs.build.outputs.short-sha }}"
-          echo "::notice::URL: http://136.110.146.135"
+          echo "::notice::URL: http://<PRODUCTION_IP>"  # Replace with your production Load Balancer IP
 
       - name: Notify on failure
         if: failure()

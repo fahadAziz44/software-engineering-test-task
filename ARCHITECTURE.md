@@ -20,7 +20,9 @@ This document provides a comprehensive overview of the microservice architecture
 
 ## High-Level Architecture
 
-The system follows a cloud-native microservice architecture deployed on Google Kubernetes Engine (GKE Autopilot) with a managed PostgreSQL database.
+The system follows a cloud-native microservice architecture designed for deployment on Google Kubernetes Engine (GKE Autopilot) with a managed PostgreSQL database.
+
+**Note:** Deployments are currently disabled for portfolio showcase purposes. See [kubernetes/README_GKE.md](./kubernetes/README_GKE.md) for deployment setup.
 
 ```
 ┌────────────────────────────────────────────────────────────────────┐
@@ -38,7 +40,7 @@ The system follows a cloud-native microservice architecture deployed on Google K
 │  │                          │    │                          │    │
 │  │  ┌────────────────────┐  │    │  ┌────────────────────┐  │    │
 │  │  │  GCE Load Balancer │  │    │  │  GCE Load Balancer │  │    │
-│  │  │  34.49.250.233     │  │    │  │  136.110.146.135   │  │    │
+│  │  │  <STAGING_IP>      │  │    │  │  <PRODUCTION_IP>   │  │    │
 │  │  └──────────┬─────────┘  │    │  └──────────┬─────────┘  │    │
 │  │             ↓            │    │             ↓            │    │
 │  │  ┌────────────────────┐  │    │  ┌────────────────────┐  │    │
@@ -413,7 +415,6 @@ The system maintains two isolated environments with different characteristics.
 | **Database** | Neon dev branch | Neon prod branch |
 | **Deployment** | Automatic on merge | Manual approval required |
 | **Downtime Tolerance** | 50% (1 pod can be down) | 0% (zero-downtime) |
-| **Load Balancer** | 34.49.250.233 | 136.110.146.135 |
 | **Namespace** | `staging` | `production` |
 | **PreStop Hook** | 5s | 10s |
 

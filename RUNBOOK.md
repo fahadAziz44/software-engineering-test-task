@@ -1,6 +1,8 @@
 # Operational Runbook
 
-This runbook provides step-by-step operational procedures for deploying, monitoring, troubleshooting, and maintaining the microservice in production.
+This runbook demonstrates production-ready operational procedures for deploying, monitoring, troubleshooting, and maintaining the microservice on Kubernetes. It showcases real-world DevOps practices including zero-downtime deployments, health monitoring, and incident response.
+
+**Note:** Replace `<PRODUCTION_IP>` and `<STAGING_IP>` with your actual GKE Load Balancer IPs when deployed.
 
 ---
 
@@ -19,6 +21,8 @@ This runbook provides step-by-step operational procedures for deploying, monitor
 ---
 
 ## Prerequisites
+
+**⚠️ Note:** The deployment workflows in `.github/workflows/deploy.yml` are **disabled by default** (`if: false`) for portfolio showcase purposes. The deployment code remains visible to demonstrate CI/CD practices. To enable automated deployments to GKE, see the [Enabling Deployments section](../kubernetes/README_GKE.md#-enabling-deployments) in `kubernetes/README_GKE.md`.
 
 ### Required Access
 - **GitHub**: Write access to repository
@@ -51,10 +55,10 @@ gcloud --version
 # Authenticate to Google Cloud
 gcloud auth login
 
-# Get GKE credentials
-gcloud container clusters get-credentials autopilot-cluster-1 \
-  --region=europe-central2 \
-  --project=YOUR_PROJECT_ID
+# Get GKE credentials (replace with your cluster details)
+gcloud container clusters get-credentials <CLUSTER_NAME> \
+  --region=<YOUR_REGION> \
+  --project=<YOUR_PROJECT_ID>
 
 # Verify access
 kubectl get namespaces
@@ -79,7 +83,7 @@ kubectl get namespaces
 
 **GitHub Actions URL:**
 ```
-https://github.com/fahadAziz44/software-engineering-test-task/actions
+https://github.com/fahadAziz44/zero-downtime-go-api/actions
 ```
 
 **Approve Production Deployment:**
@@ -193,8 +197,8 @@ kubectl logs -n production <pod-name> --tail=100
 **Staging:**
 ```bash
 # External (via Load Balancer)
-curl http://34.49.250.233/health
-curl http://34.49.250.233/ready
+curl http://<STAGING_IP>/health
+curl http://<STAGING_IP>/ready
 
 # Internal (from within cluster)
 kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
@@ -204,8 +208,8 @@ kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
 **Production:**
 ```bash
 # External
-curl http://136.110.146.135/health
-curl http://136.110.146.135/ready
+curl http://<PRODUCTION_IP>/health
+curl http://<PRODUCTION_IP>/ready
 
 # Internal
 kubectl run test-pod --image=curlimages/curl:latest --rm -i --restart=Never -- \
@@ -235,7 +239,8 @@ kubectl logs -n production -l app=cruder | grep -E '"level":"(WARN|ERROR)"'
 
 **Search logs for request ID:**
 ```bash
-kubectl logs -n production -l app=cruder | grep "5ca149c4-a6cc-4fb4"
+# Replace <REQUEST_ID> with actual request ID from X-Request-ID header
+kubectl logs -n production -l app=cruder | grep "<REQUEST_ID>"
 ```
 
 ### Check Resource Usage
@@ -448,8 +453,8 @@ kubectl rollout status deployment/cruder-app -n production
 **Post-Rollback:**
 ```bash
 # Verify health
-curl http://136.110.146.135/health
-curl http://136.110.146.135/ready
+curl http://<PRODUCTION_IP>/health
+curl http://<PRODUCTION_IP>/ready
 
 # Check logs for errors
 kubectl logs -n production -l app=cruder --tail=100
@@ -533,36 +538,7 @@ DATABASE_URL="postgres://USER:PASS@HOST:5432/DB?sslmode=require" make migrate-up
 kubectl exec -it <pod-name> -n production -- /app/migrate up
 ```
 
-### Database Backup (Neon)
 
-**Automatic Backups:**
-- Neon provides automatic point-in-time recovery (PITR)
-- Retention: 7 days (configurable in Neon console)
-
-**Manual Backup:**
-```bash
-# Export database dump
-kubectl run pg-dump --image=postgres:latest --rm -i --restart=Never -- \
-  pg_dump "postgres://USER:PASS@HOST:5432/DB?sslmode=require" > backup.sql
-
-# Upload to cloud storage
-gsutil cp backup.sql gs://your-backup-bucket/cruder-$(date +%Y%m%d).sql
-```
-
-### Database Restore
-
-**Point-in-Time Recovery (Neon Console):**
-1. Go to Neon console
-2. Select production database
-3. Click "Restore" → Choose timestamp
-4. Create new branch from backup point
-
-**Restore from SQL dump:**
-```bash
-# Restore from backup file
-kubectl run pg-restore --image=postgres:latest --rm -i --restart=Never -- \
-  psql "postgres://USER:PASS@HOST:5432/DB?sslmode=require" < backup.sql
-```
 
 ---
 
@@ -573,7 +549,7 @@ kubectl run pg-restore --image=postgres:latest --rm -i --restart=Never -- \
 **Immediate Actions:**
 1. **Assess impact**: Check if staging or production affected
    ```bash
-   curl http://136.110.146.135/health
+   curl http://<PRODUCTION_IP>/health
    kubectl get pods -n production -l app=cruder
    ```
 
@@ -630,188 +606,7 @@ kubectl run pg-restore --image=postgres:latest --rm -i --restart=Never -- \
 
 4. **Schedule fix**: Plan deployment during low-traffic window
 
----
 
-## Common Issues & Solutions
-
-### Issue: Database Connection Failures
-
-**Symptoms:**
-```json
-{"level":"ERROR","msg":"database connection failed","error":"dial tcp: i/o timeout"}
-```
-
-**Solutions:**
-1. Verify database credentials:
-   ```bash
-   kubectl get secret postgres-secret -n production -o yaml
-   ```
-
-2. Check Neon database status (Neon console)
-
-3. Verify SSL mode is correct:
-   ```bash
-   kubectl get configmap cruder-config -n production -o yaml | grep SSL
-   ```
-
-4. Test connectivity from pod:
-   ```bash
-   kubectl run test-conn --image=postgres:latest --rm -i --restart=Never -- \
-     psql "postgres://USER:PASS@HOST:5432/DB?sslmode=require" -c "SELECT 1"
-   ```
-
----
-
-### Issue: 401/403 Authentication Errors
-
-**Symptoms:**
-- External requests getting 401 or 403 responses
-
-**Cause:**
-- API_KEY authentication enabled but client not providing key
-
-**Solutions:**
-1. **Disable authentication** (development):
-   ```bash
-   # Remove API_KEY from ConfigMap
-   kubectl edit configmap cruder-config -n staging
-   # Delete API_KEY line, save
-   kubectl rollout restart deployment/cruder-app -n staging
-   ```
-
-2. **Provide API key** (production):
-   ```bash
-   # Get API key from secret
-   kubectl get secret api-secret -n production -o jsonpath='{.data.API_KEY}' | base64 -d
-
-   # Use in requests
-   curl -H "X-API-Key: YOUR_KEY_HERE" http://136.110.146.135/api/v1/users
-   ```
-
----
-
-### Issue: Deployment Timing Out
-
-**Symptoms:**
-- `kubectl rollout status` times out after 10 minutes
-- Pods stuck in `ContainerCreating` or `Pending` state
-
-**Investigation:**
-```bash
-# Check pod events
-kubectl describe pod <pod-name> -n production
-
-# Check node resources
-kubectl describe nodes | grep -A 5 "Allocated resources"
-```
-
-**Common Causes:**
-1. **Insufficient cluster resources**: GKE Autopilot provisioning new nodes (wait 5-10 min)
-2. **Image pull timeout**: Large image or slow registry (check image size)
-3. **Volume mount issues**: PVC not available (not applicable for this app)
-
-**Solutions:**
-- Wait for GKE Autopilot to provision nodes
-- Optimize Docker image size (already optimized to 36MB)
-- Check GKE quota limits in Google Cloud Console
-
----
-
-### Issue: Readiness Probe Failures
-
-**Symptoms:**
-```bash
-# Pod running but not ready
-NAME                          READY   STATUS    RESTARTS
-cruder-app-7d4f8b9c5d-abc12   0/1     Running   0
-```
-
-**Investigation:**
-```bash
-# Check readiness probe logs
-kubectl describe pod <pod-name> -n production | grep -A 10 "Readiness"
-
-# Test /ready endpoint from inside pod
-kubectl run test-ready --image=curlimages/curl:latest --rm -i --restart=Never -- \
-  curl -v http://<POD_IP>:8080/ready
-```
-
-**Common Causes:**
-1. **Database unreachable**: `/ready` checks database connectivity
-2. **Port not open**: Application not listening on port 8080
-3. **Slow startup**: Application needs more time (increase initialDelaySeconds)
-
----
-
-### Issue: Out of Memory (OOMKilled)
-
-**Symptoms:**
-```bash
-# Pod restarting frequently
-kubectl get pods -n production -l app=cruder
-# Shows high RESTARTS count
-
-# Check events
-kubectl describe pod <pod-name> -n production
-# Shows: "Reason: OOMKilled"
-```
-
-**Solutions:**
-1. **Increase memory limits**:
-   ```bash
-   kubectl edit deployment cruder-app -n production
-   # Increase limits.memory: "1Gi"
-   ```
-
-2. **Investigate memory leak**:
-   ```bash
-   # Check memory usage before OOM
-   kubectl top pods -n production -l app=cruder --containers
-   ```
-
-3. **Profile application** (locally):
-   ```bash
-   go test -memprofile=mem.prof
-   go tool pprof mem.prof
-   ```
-
----
-
-## Emergency Contacts
-
-**On-Call Rotation:** [Add your on-call schedule link]
-
-**Escalation:**
-1. **L1**: DevOps Engineer (first responder)
-2. **L2**: Senior Backend Engineer (architecture decisions)
-3. **L3**: Engineering Manager (business impact decisions)
-
-**Communication Channels:**
-- **Slack**: `#incidents` channel
-- **PagerDuty**: [Add PagerDuty integration]
-- **Email**: `engineering@company.com`
-
----
-
-## Maintenance Windows
-
-**Recommended Maintenance Windows:**
-- **Staging**: Anytime (low-impact)
-- **Production**: Sundays 02:00-06:00 UTC (lowest traffic)
-
-**Pre-Maintenance Checklist:**
-- [ ] Announce maintenance in advance (24h notice)
-- [ ] Verify rollback procedure is ready
-- [ ] Backup database before changes
-- [ ] Have at least 2 engineers available
-- [ ] Test changes in staging first
-
-**Post-Maintenance Checklist:**
-- [ ] Verify all services healthy
-- [ ] Check error rates in logs
-- [ ] Monitor for 1 hour post-change
-- [ ] Update incident log
-- [ ] Send completion notification
 
 ---
 
@@ -820,7 +615,7 @@ kubectl describe pod <pod-name> -n production
 ```bash
 # Quick Health Check
 kubectl get all -n production
-curl http://136.110.146.135/health
+curl http://<PRODUCTION_IP>/health
 
 # View Logs
 kubectl logs -n production -l app=cruder --tail=100 --follow
@@ -855,6 +650,4 @@ watch kubectl get pods -n production -l app=cruder
 
 ---
 
-**Last Updated:** November 2024
-**Version:** 1.0
-**Maintained By:** DevOps Team
+**Last Updated:** November 2024  
